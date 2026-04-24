@@ -1,0 +1,72 @@
+[
+  {
+    "id": 1,
+    "name": "Bridal Glam Package",
+    "price": 45000,
+    "image": "/images/makeup/makeup1.jpg",
+    "description": "Experience the ultimate bridal transformation with flawless makeup, hair styling, and touch-ups for your big day. Perfect for every bride who wants to shine."
+  },
+  {
+    "id": 2,
+    "name": "Family Beauty Bundle",
+    "price": 60000,
+    "image": "/images/makeup/makeup2.jpg",
+    "description": "Pamper the whole family with coordinated hair, makeup, and nail services. Ideal for special occasions and memorable family portraits."
+  },
+  {
+    "id": 3,
+    "name": "Group Glam Squad",
+    "price": 80000,
+    "image": "/images/makeup/makeup3.jpg",
+    "description": "Get your friends together for a group makeover session! Includes makeup and hair styling for up to 5 people—perfect for parties or girls’ night out."
+  },
+  {
+    "id": 4,
+    "name": "Executive Makeover",
+    "price": 25000,
+    "image": "/images/makeup/makeup4.jpg",
+    "description": "Look sharp and confident for your next big meeting or event with our professional makeup and grooming package tailored for executives."
+  },
+  {
+    "id": 5,
+    "name": "Birthday Queen Package",
+    "price": 35000,
+    "image": "/images/makeup/makeup5.jpg",
+    "description": "Celebrate your special day in style with a glamorous makeover, including makeup, hair, and a mini photo session to capture the moment."
+  },
+  {
+    "id": 6,
+    "name": "Couple’s Retreat Package",
+    "price": 55000,
+    "image": "/images/makeup/makeup6.jpg",
+    "description": "Enjoy a relaxing beauty session for two, featuring facials, hair styling, and light makeup—perfect for anniversaries or date nights."
+  },
+  {
+    "id": 7,
+    "name": "Teen Prom Perfection",
+    "price": 20000,
+    "image": "/images/makeup/makeup7.jpg",
+    "description": "Get prom-ready with stunning makeup and hair styling designed just for teens. Shine bright and make memories that last a lifetime."
+  },
+  {
+    "id": 8,
+    "name": "Corporate Event Package",
+    "price": 70000,
+    "image": "/images/makeup/makeup8.jpg",
+    "description": "Ideal for office parties or team events, this package offers group makeup and grooming for a polished, professional look."
+  },
+  {
+    "id": 9,
+    "name": "Mom & Me Makeover",
+    "price": 30000,
+    "image": "/images/makeup/makeup9.jpg",
+    "description": "Bond with your little one over a fun beauty session! Includes gentle makeup and hair styling for both mom and child."
+  },
+  {
+    "id": 10,
+    "name": "Luxury Spa Indulgence",
+    "price": 90000,
+    "image": "/images/makeup/makeup10.jpg",
+    "description": "Treat yourself to the ultimate pampering with a full spa experience, including facials, massages, makeup, and hair styling."
+  }
+]

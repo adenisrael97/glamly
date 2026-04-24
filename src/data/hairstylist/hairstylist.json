@@ -1,0 +1,22 @@
+[
+  {
+    "id": 1,
+    "name": "Land O Lakes Stylist",
+    "image": "/images/hairstylist/hairstylist1.jpg"
+  },
+  {
+    "id": 2,
+    "name": "Lindsay Cash Stylist",
+    "image": "/images/hairstylist/hairstylist2.jpg"
+  },
+  {
+    "id": 3,
+    "name": "Michael Dagonakis Stylist",
+    "image": "/images/hairstylist/hairstylist3.jpg"
+  },
+  {
+    "id": 4,
+    "name": "Praise Judah Stylist",
+    "image": "/images/hairstylist/hairstylist4.jpg"
+  }
+]

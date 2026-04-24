@@ -1,0 +1,12 @@
+[
+  {"id": 1, "filename": "adam-winger-FkAZqQJTbXM-unsplash.jpg", "alt": "Woman with curly hair smiling", "category": "women", "typeOfHair": "Curly", "price": "₦7,000"},
+  {"id": 2, "filename": "aimee-martin-eUqp41HtAR0-unsplash.jpg", "alt": "Woman with long straight hair", "category": "women", "typeOfHair": "Straight", "price": "₦8,000"},
+  {"id": 3, "filename": "alex-sheldon-plUAJDdSXyw-unsplash.jpg", "alt": "Woman with wavy hair outdoors", "category": "women", "typeOfHair": "Wavy", "price": "₦7,500"},
+  {"id": 4, "filename": "alex-sheldon-y6MBJs_KbNI-unsplash.jpg", "alt": "Woman with coily hair and glasses", "category": "women", "typeOfHair": "Coily", "price": "₦8,500"},
+  {"id": 5, "filename": "ali-esfehaniyan-NqY7m9KIAMU-unsplash.jpg", "alt": "Woman with a hat and straight hair", "category": "women", "typeOfHair": "Straight", "price": "₦7,000"},
+  {"id": 6, "filename": "amin-naderloei-iQvhQ6OaRnc-unsplash.jpg", "alt": "Woman with curly hair and earrings", "category": "women", "typeOfHair": "Curly", "price": "₦7,500"},
+  {"id": 7, "filename": "angelo-pantazis-A8WIBd73a6E-unsplash.jpg", "alt": "Woman with wavy hair and red lipstick", "category": "women", "typeOfHair": "Wavy", "price": "₦8,000"},
+  {"id": 8, "filename": "angelo-pantazis-yq2zyWLzaR0-unsplash.jpg", "alt": "Woman with coily hair and a smile", "category": "women", "typeOfHair": "Coily", "price": "₦8,500"},
+  {"id": 9, "filename": "averie-woodard-4nulm-JUYFo-unsplash.jpg", "alt": "Woman with long straight hair outdoors", "category": "women", "typeOfHair": "Straight", "price": "₦7,000"},
+  {"id": 10, "filename": "baylee-gramling-MMz03PyCOZg-unsplash.jpg", "alt": "Woman with curly hair and a hat", "category": "women", "typeOfHair": "Curly", "price": "₦7,500"}
+]

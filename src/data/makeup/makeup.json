@@ -1,0 +1,12 @@
+[
+  {"id": 1, "filename": "aurela-redenica-AClwl-V2XL0-unsplash.jpg", "alt": "Woman with elegant makeup and earrings", "category": "makeup", "typeOfHair": "Straight", "price": "₦10,000"},
+  {"id": 2, "filename": "ben-masora-fhA8_hqYc_g-unsplash (1).jpg", "alt": "Closeup of makeup on model's face", "category": "makeup", "typeOfHair": "Curly", "price": "₦12,000"},
+  {"id": 3, "filename": "ben-masora-fhA8_hqYc_g-unsplash.jpg", "alt": "Model with bold eye makeup", "category": "makeup", "typeOfHair": "Wavy", "price": "₦11,000"},
+  {"id": 4, "filename": "blackpearl-worldwide-wnaF_I1yRLY-unsplash.jpg", "alt": "Woman with creative makeup look", "category": "makeup", "typeOfHair": "Coily", "price": "₦13,000"},
+  {"id": 5, "filename": "divine-effiong-3dfczLb8yhM-unsplash.jpg", "alt": "Woman with natural makeup and curly hair", "category": "makeup", "typeOfHair": "Curly", "price": "₦10,500"},
+  {"id": 6, "filename": "divine-effiong-h1lA3N5wb8M-unsplash.jpg", "alt": "Woman with glam makeup and earrings", "category": "makeup", "typeOfHair": "Straight", "price": "₦12,500"},
+  {"id": 7, "filename": "divine-effiong-rhTbZeJUv1o-unsplash.jpg", "alt": "Woman with bold lipstick and wavy hair", "category": "makeup", "typeOfHair": "Wavy", "price": "₦11,500"},
+  {"id": 8, "filename": "eyitayo-adekoya-YxKa50gI-FA-unsplash.jpg", "alt": "Woman with soft makeup and coily hair", "category": "makeup", "typeOfHair": "Coily", "price": "₦13,500"},
+  {"id": 9, "filename": "eze-joseph-I0FCLHZYd54-unsplash.jpg", "alt": "Woman with party makeup and straight hair", "category": "makeup", "typeOfHair": "Straight", "price": "₦10,000"},
+  {"id": 10, "filename": "gideon-hezekiah-1I3_xTAXTxo-unsplash.jpg", "alt": "Woman with curly hair and natural makeup", "category": "makeup", "typeOfHair": "Curly", "price": "₦10,500"}
+]

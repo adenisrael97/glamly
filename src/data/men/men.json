@@ -1,0 +1,242 @@
+[
+  {
+    "id": 1,
+    "filename": "ahmad-ebadi-S3GxGKyGPWM-unsplash.jpg",
+    "alt": "Portrait of a man with beard and glasses",
+    "category": "men",
+    "typeOfHair": "Curly",
+    "price": "₦5,000"
+  },
+  {
+    "id": 2,
+    "filename": "ahmad-ebadi-zAsMbiVW5-M-unsplash.jpg",
+    "alt": "Man in a suit looking away",
+    "category": "men",
+    "typeOfHair": "Straight",
+    "price": "₦6,000"
+  },
+  {
+    "id": 3,
+    "filename": "aleksandar-andreev-XbM0XATexu8-unsplash.jpg",
+    "alt": "Man with styled hair and beard",
+    "category": "men",
+    "typeOfHair": "Wavy",
+    "price": "₦5,500"
+  },
+  {
+    "id": 4,
+    "filename": "alex-sheldon-e_mwgrQA2ig-unsplash (1).jpg",
+    "alt": "Young man in casual wear",
+    "category": "men",
+    "typeOfHair": "Coily",
+    "price": "₦6,500"
+  },
+  {
+    "id": 5,
+    "filename": "alex-sheldon-e_mwgrQA2ig-unsplash.jpg",
+    "alt": "Man with a hat and sunglasses",
+    "category": "men",
+    "typeOfHair": "Straight",
+    "price": "₦5,000"
+  },
+  {
+    "id": 6,
+    "filename": "alex-sheldon-pgQ79pp8Nes-unsplash.jpg",
+    "alt": "Man with curly hair smiling",
+    "category": "men",
+    "typeOfHair": "Curly",
+    "price": "₦5,500"
+  },
+  {
+    "id": 7,
+    "filename": "amir-soltani-1_zIOXwhW64-unsplash.jpg",
+    "alt": "Man with a trimmed beard",
+    "category": "men",
+    "typeOfHair": "Wavy",
+    "price": "₦6,000"
+  },
+  {
+    "id": 8,
+    "filename": "amir-soltani-j88fRoQ92PQ-unsplash.jpg",
+    "alt": "Man with a modern hairstyle",
+    "category": "men",
+    "typeOfHair": "Straight",
+    "price": "₦6,500"
+  },
+  {
+    "id": 9,
+    "filename": "amritpal-singh-wE-GAKR9WaY-unsplash.jpg",
+    "alt": "Man with a turban and beard",
+    "category": "men",
+    "typeOfHair": "Coily",
+    "price": "₦7,000"
+  },
+  {
+    "id": 10,
+    "filename": "asal-mshk-4lNntPKgP04-unsplash.jpg",
+    "alt": "Man with a serious expression",
+    "category": "men",
+    "typeOfHair": "Curly",
+    "price": "₦5,000"
+  },
+  {
+    "id": 11,
+    "filename": "ato-aikins-9ORXOd7g01s-unsplash.jpg",
+    "alt": "Man with a patterned shirt",
+    "category": "men",
+    "typeOfHair": "Wavy",
+    "price": "₦5,500"
+  },
+  {
+    "id": 12,
+    "filename": "bojan-mano-rzQcwm_ZfBI-unsplash.jpg",
+    "alt": "Man with a scarf and jacket",
+    "category": "men",
+    "typeOfHair": "Straight",
+    "price": "₦6,000"
+  },
+  {
+    "id": 13,
+    "filename": "damian-barczak-5st86wYikQQ-unsplash.jpg",
+    "alt": "Man with a clean shave",
+    "category": "men",
+    "typeOfHair": "Curly",
+    "price": "₦5,000"
+  },
+  {
+    "id": 14,
+    "filename": "glassesshop-yS9hj4HJCdY-unsplash.jpg",
+    "alt": "Man wearing sunglasses",
+    "category": "men",
+    "typeOfHair": "Wavy",
+    "price": "₦5,500"
+  },
+  {
+    "id": 15,
+    "filename": "gn-group-hJKiVkuOOyo-unsplash.jpg",
+    "alt": "Man with a stylish haircut",
+    "category": "men",
+    "typeOfHair": "Straight",
+    "price": "₦6,000"
+  },
+  {
+    "id": 16,
+    "filename": "hasibullah-sahil-W-inhanjr9E-unsplash.jpg",
+    "alt": "Man with a blue shirt",
+    "category": "men",
+    "typeOfHair": "Coily",
+    "price": "₦6,500"
+  },
+  {
+    "id": 17,
+    "filename": "irish83-RR8PFLKM1i4-unsplash.jpg",
+    "alt": "Man with a trimmed beard and glasses",
+    "category": "men",
+    "typeOfHair": "Curly",
+    "price": "₦5,000"
+  },
+  {
+    "id": 18,
+    "filename": "jovan-vasiljevic-NtSijntWDic-unsplash.jpg",
+    "alt": "Man with a black t-shirt",
+    "category": "men",
+    "typeOfHair": "Wavy",
+    "price": "₦5,500"
+  },
+  {
+    "id": 19,
+    "filename": "laura-oliveira-1CSIDVhfDPg-unsplash.jpg",
+    "alt": "Man with a white shirt smiling",
+    "category": "men",
+    "typeOfHair": "Straight",
+    "price": "₦6,000"
+  },
+  {
+    "id": 20,
+    "filename": "lvpo-productions-lu5L2Awqmr8-unsplash.jpg",
+    "alt": "Man with a camera",
+    "category": "men",
+    "typeOfHair": "Curly",
+    "price": "₦5,000"
+  },
+  {
+    "id": 21,
+    "filename": "mir-najeeb-mengal-FIRObqOq5X8-unsplash.jpg",
+    "alt": "Man with a blue background",
+    "category": "men",
+    "typeOfHair": "Wavy",
+    "price": "₦5,500"
+  },
+  {
+    "id": 22,
+    "filename": "mir-najeeb-mengal-U3cCIwCSQ6k-unsplash.jpg",
+    "alt": "Man with a white background",
+    "category": "men",
+    "typeOfHair": "Straight",
+    "price": "₦6,000"
+  },
+  {
+    "id": 23,
+    "filename": "moein-glmzdh-t7KH7EN4BAs-unsplash.jpg",
+    "alt": "Man with a beard and hat",
+    "category": "men",
+    "typeOfHair": "Coily",
+    "price": "₦6,500"
+  },
+  {
+    "id": 24,
+    "filename": "moein-glmzdh-yqv7Gj80rJg-unsplash.jpg",
+    "alt": "Man with a blue jacket",
+    "category": "men",
+    "typeOfHair": "Curly",
+    "price": "₦5,000"
+  },
+  {
+    "id": 25,
+    "filename": "mohamed-b-SHA-8AjZOeY-unsplash.jpg",
+    "alt": "Man with a white shirt and beard",
+    "category": "men",
+    "typeOfHair": "Wavy",
+    "price": "₦5,500"
+  },
+  {
+    "id": 26,
+    "filename": "patrik-velich-6IkY22wrjaE-unsplash.jpg",
+    "alt": "Man with a brown jacket",
+    "category": "men",
+    "typeOfHair": "Straight",
+    "price": "₦6,000"
+  },
+  {
+    "id": 27,
+    "filename": "raviraj-singh-tomar-_qShoDHcrxA-unsplash.jpg",
+    "alt": "Man with a checked shirt",
+    "category": "men",
+    "typeOfHair": "Coily",
+    "price": "₦6,500"
+  },
+  {
+    "id": 28,
+    "filename": "usen-parmanov-Fsf12ZBCwFs-unsplash.jpg",
+    "alt": "Man with a black t-shirt and beard",
+    "category": "men",
+    "typeOfHair": "Curly",
+    "price": "₦5,000"
+  },
+  {
+    "id": 29,
+    "filename": "vasu-dev-II9VuKqNCQE-unsplash.jpg",
+    "alt": "Man with a blue background and beard",
+    "category": "men",
+    "typeOfHair": "Wavy",
+    "price": "₦5,500"
+  },
+  {
+    "id": 30,
+    "filename": "zanyar-ibrahim-3bHgZ1ogvh8-unsplash.jpg",
+    "alt": "Man with a white shirt and curly hair",
+    "category": "men",
+    "typeOfHair": "Straight",
+    "price": "₦6,000"
+  }
+]

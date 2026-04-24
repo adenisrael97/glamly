@@ -1,0 +1,61 @@
+[
+  { "id": 1, "name": "Men Haircut", "price": 5000, "image": "/images/men/men1.jpg", "category": "Hair", "gender": "Men" },
+  { "id": 2, "name": "Women Haircut", "price": 6000, "image": "/images/women/women1.jpg", "category": "Hair", "gender": "Women" },
+  { "id": 3, "name": "Makeup Classic", "price": 10000, "image": "/images/makeup/makeup1.jpg", "category": "Makeup" },
+  { "id": 4, "name": "Nail Art", "price": 4000, "image": "/images/naileye/naileye1.jpg", "category": "Nails" },
+  { "id": 5, "name": "Eye Glam", "price": 5500, "image": "/images/naileye/naileye2.jpg", "category": "Eyes" },
+
+  { "id": 6, "name": "Women Braids", "price": 8000, "image": "/images/women/women2.jpg", "category": "Hair", "gender": "Women" },
+  { "id": 7, "name": "Men Fade Cut", "price": 7000, "image": "/images/men/men2.jpg", "category": "Hair", "gender": "Men" },
+  { "id": 8, "name": "Bridal Makeup", "price": 15000, "image": "/images/makeup/makeup2.jpg", "category": "Makeup" },
+  { "id": 9, "name": "French Nails", "price": 4500, "image": "/images/naileye/naileye3.jpg", "category": "Nails" },
+  { "id": 10, "name": "Lash Extensions", "price": 9000, "image": "/images/naileye/naileye4.jpg", "category": "Eyes" },
+
+  { "id": 11, "name": "Men Beard Trim", "price": 3500, "image": "/images/men/men3.jpg", "category": "Hair", "gender": "Men" },
+  { "id": 12, "name": "Women Curls", "price": 7000, "image": "/images/women/women3.jpg", "category": "Hair", "gender": "Women" },
+  { "id": 13, "name": "Evening Makeup", "price": 12000, "image": "/images/makeup/makeup3.jpg", "category": "Makeup" },
+  { "id": 14, "name": "Nail Polish", "price": 3500, "image": "/images/naileye/naileye5.jpg", "category": "Nails" },
+  { "id": 15, "name": "Eye Liner Art", "price": 6000, "image": "/images/naileye/naileye6.jpg", "category": "Eyes" },
+
+  { "id": 16, "name": "Men Classic Cut", "price": 5000, "image": "/images/men/men4.jpg", "category": "Hair", "gender": "Men" },
+  { "id": 17, "name": "Women Ponytail", "price": 6500, "image": "/images/women/women4.jpg", "category": "Hair", "gender": "Women" },
+  { "id": 18, "name": "Glam Makeup", "price": 11000, "image": "/images/makeup/makeup4.jpg", "category": "Makeup" },
+  { "id": 19, "name": "Nail Sparkle", "price": 5000, "image": "/images/naileye/naileye7.jpg", "category": "Nails" },
+  { "id": 20, "name": "Eye Shadow Pro", "price": 8000, "image": "/images/naileye/naileye8.jpg", "category": "Eyes" },
+
+  { "id": 21, "name": "Men Undercut", "price": 6000, "image": "/images/men/men5.jpg", "category": "Hair", "gender": "Men" },
+  { "id": 22, "name": "Women Bob", "price": 7000, "image": "/images/women/women5.jpg", "category": "Hair", "gender": "Women" },
+  { "id": 23, "name": "Natural Makeup", "price": 9000, "image": "/images/makeup/makeup5.jpg", "category": "Makeup" },
+  { "id": 24, "name": "Nail French Tips", "price": 4000, "image": "/images/naileye/naileye9.jpg", "category": "Nails" },
+  { "id": 25, "name": "Eye Brow Tint", "price": 7000, "image": "/images/naileye/naileye10.jpg", "category": "Eyes" },
+
+  { "id": 26, "name": "Men Crew Cut", "price": 5000, "image": "/images/men/men6.jpg", "category": "Hair", "gender": "Men" },
+  { "id": 27, "name": "Women Pixie", "price": 7500, "image": "/images/women/women6.jpg", "category": "Hair", "gender": "Women" },
+  { "id": 28, "name": "Party Makeup", "price": 13000, "image": "/images/makeup/makeup6.jpg", "category": "Makeup" },
+  { "id": 29, "name": "Nail Ombre", "price": 5000, "image": "/images/naileye/naileye1.jpg", "category": "Nails" },
+  { "id": 30, "name": "Eye Cat Eye", "price": 8500, "image": "/images/naileye/naileye2.jpg", "category": "Eyes" },
+
+  { "id": 31, "name": "Men Taper Fade", "price": 6500, "image": "/images/men/men7.jpg", "category": "Hair", "gender": "Men" },
+  { "id": 32, "name": "Women Layered", "price": 8000, "image": "/images/women/women7.jpg", "category": "Hair", "gender": "Women" },
+  { "id": 33, "name": "Editorial Makeup", "price": 14000, "image": "/images/makeup/makeup7.jpg", "category": "Makeup" },
+  { "id": 34, "name": "Nail Minimalist", "price": 3500, "image": "/images/naileye/naileye3.jpg", "category": "Nails" },
+  { "id": 35, "name": "Eye Volume Lash", "price": 9500, "image": "/images/naileye/naileye4.jpg", "category": "Eyes" },
+
+  { "id": 36, "name": "Men Buzz Cut", "price": 4000, "image": "/images/men/men8.jpg", "category": "Hair", "gender": "Men" },
+  { "id": 37, "name": "Women Updo", "price": 9000, "image": "/images/women/women8.jpg", "category": "Hair", "gender": "Women" },
+  { "id": 38, "name": "Runway Makeup", "price": 16000, "image": "/images/makeup/makeup8.jpg", "category": "Makeup" },
+  { "id": 39, "name": "Nail Marble", "price": 6000, "image": "/images/naileye/naileye5.jpg", "category": "Nails" },
+  { "id": 40, "name": "Eye Natural", "price": 7000, "image": "/images/naileye/naileye6.jpg", "category": "Eyes" },
+
+  { "id": 41, "name": "Men Pompadour", "price": 7500, "image": "/images/men/men9.jpg", "category": "Hair", "gender": "Men" },
+  { "id": 42, "name": "Women Waves", "price": 8500, "image": "/images/women/women9.jpg", "category": "Hair", "gender": "Women" },
+  { "id": 43, "name": "Festival Makeup", "price": 12000, "image": "/images/makeup/makeup9.jpg", "category": "Makeup" },
+  { "id": 44, "name": "Nail Chrome", "price": 7000, "image": "/images/naileye/naileye7.jpg", "category": "Nails" },
+  { "id": 45, "name": "Eye Bold", "price": 8000, "image": "/images/naileye/naileye8.jpg", "category": "Eyes" },
+
+  { "id": 46, "name": "Men Side Part", "price": 6000, "image": "/images/men/men10.jpg", "category": "Hair", "gender": "Men" },
+  { "id": 47, "name": "Women Fringe", "price": 7000, "image": "/images/women/women10.jpg", "category": "Hair", "gender": "Women" },
+  { "id": 48, "name": "Editorial Nails", "price": 8000, "image": "/images/naileye/naileye9.jpg", "category": "Nails" },
+  { "id": 49, "name": "Eye Drama", "price": 9000, "image": "/images/naileye/naileye10.jpg", "category": "Eyes" },
+  { "id": 50, "name": "Men Dreadlocks", "price": 10000, "image": "/images/men/men11.jpg", "category": "Hair", "gender": "Men" }
+]
