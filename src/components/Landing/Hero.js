@@ -3,6 +3,7 @@
 
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 
 export default function Hero() {
   const router = useRouter();
@@ -87,23 +88,24 @@ export default function Hero() {
         </form>
         {/* Action Buttons */}
         <div className="flex flex-col md:flex-row gap-4 mt-8 w-full justify-center">
-          <a
-            href="/search"
-            className="flex-1 md:flex-none bg-yellow-400 text-white font-bold px-8 py-3 rounded-lg shadow-lg border-2 border-purple-600 hover:bg-yellow-400 hover:text-black hover:border-yellow-400 transition-colors duration-200 text-lg text-center flex items-center justify-center"
-            style={{ textDecoration: 'none' }}
+          <Link
+            href="/services"
+            className="flex-1 md:flex-none bg-yellow-400 text-black font-bold px-8 py-3 rounded-lg shadow-lg border-2 border-yellow-400 hover:bg-yellow-500 hover:border-yellow-500 transition-colors duration-200 text-lg text-center flex items-center justify-center"
           >
             Browse Services
-          </a>
-          <button
-            className="flex-1 md:flex-none bg-purple-600 text-black font-bold px-8 py-3 rounded-lg shadow-lg border-2 border-yellow-400 hover:bg-purple-600 hover:text-white hover:border-purple-600 transition-colors duration-200 text-lg"
+          </Link>
+          <Link
+            href="/stylist-register"
+            className="flex-1 md:flex-none bg-purple-600 text-white font-bold px-8 py-3 rounded-lg shadow-lg border-2 border-purple-600 hover:bg-purple-700 hover:border-purple-700 transition-colors duration-200 text-lg text-center flex items-center justify-center"
           >
             Become a Stylist
-          </button>
-		  <button
-            className="flex-1 md:flex-none bg-yellow-400 text-black font-bold px-8 py-3 rounded-lg shadow-lg border-2 border-yellow-400 hover:bg-purple-600 hover:text-white hover:border-purple-600 transition-colors duration-200 text-lg"
+          </Link>
+          <Link
+            href="/gift-service"
+            className="flex-1 md:flex-none bg-white/10 backdrop-blur-sm text-white font-bold px-8 py-3 rounded-lg shadow-lg border-2 border-white/40 hover:bg-white/20 hover:border-white/60 transition-colors duration-200 text-lg text-center flex items-center justify-center"
           >
-            Gift a Service
-          </button>
+            🎁 Gift a Service
+          </Link>
         </div>
       </div>
     </div>

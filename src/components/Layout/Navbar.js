@@ -16,7 +16,8 @@ const navLinks = [
   { name: "Packages", href: "/packages" },
   { name: "Stylists", href: "/stylist" },
   { name: "Search", href: "/Search" },
-  { name: "Login/Register", href: "/Login" },
+  { name: "Gift a Service", href: "/gift-service" },
+  { name: "Login", href: "/Login" },
 ];
 
 const contactInfo = {
@@ -226,13 +227,19 @@ export default function Navbar() {
             </ul>
 
             {/* CTA Button */}
-            <div className="hidden lg:flex items-center gap-4 ml-4">
+            <div className="hidden lg:flex items-center gap-3 ml-4">
               <Link
-                href="/Search"
-                className="px-4 py-2 rounded-lg bg-teal-500 hover:bg-teal-600 text-white text-base font-semibold transition-all shadow-lg hover:scale-105 focus:outline-none focus:ring-2 focus:ring-teal-200"
-                style={{ minWidth: "120px", letterSpacing: "0.04em" }}
+                href="/register"
+                className="px-4 py-2 rounded-lg border border-white/30 text-white text-sm font-semibold hover:bg-white/10 transition-all focus:outline-none"
               >
-                Book Appointment
+                Register
+              </Link>
+              <Link
+                href="/book-appointment"
+                className="px-4 py-2 rounded-lg bg-yellow-400 hover:bg-yellow-500 text-black text-sm font-bold transition-all shadow-lg hover:scale-105 focus:outline-none focus:ring-2 focus:ring-yellow-200"
+                style={{ minWidth: "140px", letterSpacing: "0.04em", textAlign: "center" }}
+              >
+                Book Now 📅
               </Link>
             </div>
 
