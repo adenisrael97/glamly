@@ -1,36 +1,203 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Glamly — Beauty Booking Platform
+
+A production-grade stylist discovery and booking platform built with Next.js App Router, React 19, and Tailwind CSS v4. Users can browse stylists, filter by service, save favourites, and complete a multi-step appointment booking — all with a polished, accessible, modern UI.
+
+---
+
+## Live Demo
+
+> Run locally — see [Getting Started](#getting-started) below.
+
+---
+
+## Tech Stack
+
+| Layer | Choice | Why |
+|---|---|---|
+| Framework | Next.js 16 (App Router) | RSC, file-based routing, built-in image optimisation |
+| Language | JavaScript (ES2022) | No transpilation overhead; all modern syntax available |
+| Styling | Tailwind CSS v4 | Utility-first, zero runtime, CSS custom property tokens |
+| Data fetching | SWR | Stale-while-revalidate, `keepPreviousData` for no-flash filter changes |
+| Animation | Framer Motion | Declarative enter/exit without hand-rolling keyframes |
+| Icons | react-icons | Tree-shakeable, consistent icon families |
+| Mock API | Next.js Route Handlers | Simulates real backend latency, pagination, and filtering |
+| Images | `next/image` | Automatic WebP/AVIF, lazy loading, CLS prevention |
+| Testing | Vitest + Testing Library | Fast, jsdom-based unit tests for hooks and pure functions |
+
+---
+
+## Features
+
+### User-facing
+- **Stylist discovery** — browse 25 stylists with location, services, rating, and live availability badge
+- **Advanced search** — debounced text search, service chips, collapsible rating/price/sort filter panel, "show busy" toggle
+- **Stylist detail page** — profile header, stats grid, tabbed About/Reviews, sticky booking footer, favorites toggle
+- **Save favourites** — heart toggle on every card, persisted to `localStorage`, count shown in the search header
+- **Multi-step booking wizard** — 5-step flow: Service → Stylist → Date & Time → Details → Confirm, with per-step validation
+- **Booking with packages and add-ons** — `/booking/[id]` with package selection, optional extras, and running total
+- **Gift service form** — generates a styled digital gift voucher with a unique code on submit
+- **Stylist onboarding** — 4-step registration wizard with validation and review screen before submission
+- **Authentication** — login and register with Customer / Stylist role toggle, global auth state, password strength meter, social sign-in buttons, persistent session via `localStorage`
+
+### Technical
+- **SWR data fetching** — `useStylists`, `useStylist`, `useServices` hooks with `keepPreviousData` eliminating filter-change flicker
+- **Mock API routes** — `GET /api/stylists`, `GET /api/stylists/[id]`, `GET /api/services` with simulated delays, full filtering, sorting, and pagination
+- **Global auth context** — `useReducer`-based `AuthContext` with `login`, `register`, `logout`, loading/error state, and localStorage persistence
+- **Centralised validation** — pure `lib/validation.js` functions (`validateLogin`, `validateRegister`, `validateBookingStep`, `validateGiftService`, `passwordStrength`) — no React dependency, fully testable in isolation
+- **Skeleton loaders** — shimmer placeholders on every data-dependent surface; zero blank screens or layout shift
+- **Dynamic imports** — all non-critical landing sections and heavy page components lazy-loaded with `next/dynamic`
+- **Server / Client Component split** — layout, footer, and static sections remain Server Components; interactivity isolated to the smallest possible Client Components
+- **Accessibility** — `role="search"`, `aria-live`, `aria-busy`, `aria-pressed`, `aria-current`, `role="tabpanel"`, `aria-labelledby`, `focus-visible` outlines, semantic `dl`/`dt`/`dd` for definition lists, `role="progressbar"` on rating bars
+- **SEO metadata** — `title` template, `description`, `openGraph`, and `keywords` wired into the root layout
+- **42 passing tests** — `useDebounce`, `useFavorites`, and all 5 validation functions fully covered
+
+---
+
+## Project Structure
+
+```
+src/
+├── app/
+│   ├── api/
+│   │   ├── stylists/
+│   │   │   ├── route.js              # GET /api/stylists  (filter, sort, paginate)
+│   │   │   └── [id]/route.js         # GET /api/stylists/:id  (enriched detail)
+│   │   └── services/route.js         # GET /api/services
+│   ├── stylist/
+│   │   ├── page.js                   # Stylist listing page
+│   │   └── [id]/page.js              # Stylist detail — SWR + useFavorites
+│   ├── booking/[id]/page.js          # Full booking (packages + add-ons)
+│   ├── book-appointment/             # 5-step booking wizard
+│   ├── services/                     # Service catalogue with category filters
+│   ├── gift-service/                 # Gift voucher form
+│   ├── Login/page.js                 # Auth: login (useAuth + validateLogin)
+│   ├── register/page.js              # Auth: customer + stylist registration
+│   ├── stylist-register/             # Auth: stylist onboarding (4 steps)
+│   ├── packages/                     # Packages catalogue
+│   ├── layout.js                     # Root layout — AuthProvider, Navbar, Footer
+│   └── globals.css                   # Tailwind import, CSS tokens, animations
+├── components/
+│   ├── Layout/
+│   │   ├── Navbar.js                 # Auth-aware: avatar + dropdown or Sign in CTA
+│   │   ├── Footer.js                 # Dark footer (Server Component)
+│   │   └── NewsletterForm.js         # Isolated Client Component for newsletter
+│   ├── Landing/                      # Home page sections (all dynamically imported)
+│   ├── Search/
+│   │   ├── Searchpage.js             # SWR-powered listing — filter/sort/pagination
+│   │   ├── SearchFilters.js          # Collapsible filter panel with pill controls
+│   │   └── StylistCard.js            # Card with availability badge, stars, favourites
+│   └── ui/
+│       ├── Button.jsx
+│       ├── Card.jsx
+│       ├── Input.jsx
+│       └── Skeleton.jsx              # StylistCardSkeleton, CardSkeleton, etc.
+├── context/
+│   └── AuthContext.js                # useReducer auth state, localStorage persistence
+├── hooks/
+│   ├── useDebounce.js                # Debounced value with configurable delay
+│   ├── useFavorites.js               # localStorage-backed favourites Set
+│   ├── useStylists.js                # SWR hook — list + single stylist
+│   └── useServices.js                # SWR hook — service catalogue
+├── lib/
+│   ├── fetcher.js                    # SWR fetcher with typed error
+│   └── validation.js                 # Pure validation functions (no React)
+├── __tests__/
+│   ├── setup.js                      # jest-dom + IS_REACT_ACT_ENVIRONMENT
+│   ├── validation.test.js            # 29 tests — all validators + regex
+│   ├── useDebounce.test.js           # 5 tests — fake timers
+│   └── useFavorites.test.js          # 8 tests — localStorage mock
+└── data/
+    ├── services.json
+    └── stylist/stylist.json
+```
+
+---
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- **Node.js 18+**
+- **npm**
+
+### Installation
+
+```bash
+git clone https://github.com/your-username/glamly.git
+cd glamly
+npm install --include=dev
+```
+
+> **Note:** Tailwind CSS v4 (`@tailwindcss/postcss`) is a devDependency. Always use `npm install --include=dev` or set `NODE_ENV=development` so the PostCSS plugin is available during the build.
+
+### Development
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+### Production build
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build
+npm start
+```
 
-## Learn More
+### Tests
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm test          # run once
+npm run test:watch  # watch mode
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Key Design Decisions
 
-## Deploy on Vercel
+### SWR over direct JSON imports
+The search and stylist detail pages use SWR hooks (`useStylists`, `useStylist`) backed by mock API route handlers rather than direct JSON imports. This means every component already speaks the real data-fetching contract — swapping in a real database only requires changing the route handler body, not any component. `keepPreviousData: true` eliminates the flash-to-empty-state that occurs when filters change.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Server / Client Component boundary
+Root layout, Footer, and all static landing sections are Server Components — they ship zero JavaScript to the browser. Client Components are introduced only at interaction points: Navbar, StylistCard, all forms, and the search listing. The newsletter `<form>` is extracted into `NewsletterForm.js` specifically to keep Footer as a Server Component.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Auth via Context + localStorage
+`AuthContext` uses `useReducer` for predictable state transitions and persists the session to `localStorage`. This is the right architecture for a frontend-only project — it mirrors what a real app would do with an HttpOnly cookie, making the transition to a real backend a one-line change in the `simulateLogin` function.
+
+### Centralised validation
+All form validation lives in `lib/validation.js` — pure functions with zero React dependency. This means the same rules run in tests, in forms, and (when a backend exists) can be imported server-side too. Password strength is also pure and reused across register page and stylist onboarding.
+
+### Skeleton-first loading
+Every surface that waits on data shows a shimmer skeleton rather than a spinner or blank screen. This prevents layout shift (CLS) and gives a perceived-performance advantage that matches what users expect from apps like Airbnb or Uber.
+
+### Testing strategy
+Unit tests target the two categories of logic that are most likely to regress silently: pure validation functions (edge cases in email/phone regexes, field interactions) and stateful hooks (`useDebounce` timer semantics, `useFavorites` localStorage contract). Component rendering tests are deferred until the backend is real — testing against mock data adds maintenance burden without catching real bugs.
+
+---
+
+## Roadmap — what a real backend would add
+
+- [ ] Authentication via Next.js Middleware (JWT / HttpOnly session cookies)
+- [ ] Database layer (Postgres via Supabase or Neon)
+- [ ] Stylist profile image upload (Vercel Blob or Cloudinary)
+- [ ] Real-time availability (WebSockets or polling)
+- [ ] Payment processing (Paystack for Nigeria, or Stripe)
+- [ ] Email confirmations and reminders (Resend)
+- [ ] Stylist dashboard — manage bookings, view earnings
+- [ ] Admin panel — approve stylists, moderate reviews
+- [ ] End-to-end tests (Playwright) once API is real
+
+---
+
+## Author
+
+**Adeniran Israel**  
+Frontend Engineer  
+[GitHub](https://github.com/your-username) · [LinkedIn](https://linkedin.com/in/your-profile)
+
+---
+
+## License
+
+MIT

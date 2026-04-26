@@ -9,6 +9,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaPhone, FaEnvelope, FaBars, FaTimes } from "react-icons/fa";
 import { HiChevronDown } from "react-icons/hi";
+import { useAuth } from "@/context/AuthContext";
 
 const navLinks = [
   { name: "Home", href: "/" },
@@ -17,7 +18,6 @@ const navLinks = [
   { name: "Stylists", href: "/stylist" },
   { name: "Search", href: "/Search" },
   { name: "Gift a Service", href: "/gift-service" },
-  { name: "Login", href: "/Login" },
 ];
 
 const contactInfo = {
@@ -28,12 +28,15 @@ const contactInfo = {
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
+  const { user, logout, loading: authLoading } = useAuth();
   const [isOpen, setIsOpen] = useState(false); // mobile menu
   const [scrolled, setScrolled] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false); // desktop dropdown
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [service, setService] = useState("");
   const [location, setLocation] = useState("");
   const dropdownRef = useRef(null);
+  const userMenuRef = useRef(null);
 
   // Scroll effect
   useEffect(() => {
@@ -42,11 +45,14 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Close dropdown if clicked outside
+  // Close dropdowns if clicked outside
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setSearchOpen(false);
+      }
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
+        setUserMenuOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -226,21 +232,103 @@ export default function Navbar() {
               ))}
             </ul>
 
-            {/* CTA Button */}
+            {/* CTA / Auth */}
             <div className="hidden lg:flex items-center gap-3 ml-4">
-              <Link
-                href="/register"
-                className="px-4 py-2 rounded-lg border border-white/30 text-white text-sm font-semibold hover:bg-white/10 transition-all focus:outline-none"
-              >
-                Register
-              </Link>
-              <Link
-                href="/book-appointment"
-                className="px-4 py-2 rounded-lg bg-yellow-400 hover:bg-yellow-500 text-black text-sm font-bold transition-all shadow-lg hover:scale-105 focus:outline-none focus:ring-2 focus:ring-yellow-200"
-                style={{ minWidth: "140px", letterSpacing: "0.04em", textAlign: "center" }}
-              >
-                Book Now 📅
-              </Link>
+              {!authLoading && !user ? (
+                <>
+                  <Link
+                    href="/Login"
+                    className="px-4 py-2 rounded-lg border border-white/30 text-white text-sm font-semibold hover:bg-white/10 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                  >
+                    Sign in
+                  </Link>
+                  <Link
+                    href="/book-appointment"
+                    className="px-4 py-2 rounded-lg bg-yellow-400 hover:bg-yellow-500 text-black text-sm font-bold transition-all shadow-lg hover:scale-105 focus:outline-none focus:ring-2 focus:ring-yellow-200"
+                    style={{ minWidth: "140px", letterSpacing: "0.04em", textAlign: "center" }}
+                  >
+                    Book Now 📅
+                  </Link>
+                </>
+              ) : !authLoading && user ? (
+                <>
+                  <Link
+                    href="/book-appointment"
+                    className="px-4 py-2 rounded-lg bg-yellow-400 hover:bg-yellow-500 text-black text-sm font-bold transition-all shadow-lg hover:scale-105 focus:outline-none focus:ring-2 focus:ring-yellow-200"
+                    style={{ letterSpacing: "0.04em" }}
+                  >
+                    Book Now 📅
+                  </Link>
+                  {/* User avatar + dropdown */}
+                  <div className="relative" ref={userMenuRef}>
+                    <button
+                      type="button"
+                      onClick={() => setUserMenuOpen((v) => !v)}
+                      aria-expanded={userMenuOpen}
+                      aria-haspopup="true"
+                      aria-label={`Account menu for ${user.name}`}
+                      className="flex items-center gap-2 pl-1 pr-3 py-1 rounded-full border border-white/20 hover:border-white/50 transition-all bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-linear-to-br from-pink-400 via-yellow-300 to-purple-400 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                        {user.name[0].toUpperCase()}
+                      </div>
+                      <span className="text-sm text-white font-medium max-w-[100px] truncate">{user.name.split(" ")[0]}</span>
+                      <HiChevronDown className={`text-white/70 transition-transform ${userMenuOpen ? "rotate-180" : ""}`} />
+                    </button>
+                    <AnimatePresence>
+                      {userMenuOpen && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -8 }}
+                          transition={{ duration: 0.15 }}
+                          className="absolute right-0 top-full mt-2 w-52 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50"
+                          role="menu"
+                        >
+                          <div className="px-4 py-3 border-b border-gray-100">
+                            <p className="text-sm font-semibold text-gray-900 truncate">{user.name}</p>
+                            <p className="text-xs text-gray-400 truncate">{user.email}</p>
+                            <span className="mt-1 inline-block text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium capitalize">{user.role}</span>
+                          </div>
+                          <div className="py-1">
+                            <Link
+                              href="/"
+                              role="menuitem"
+                              onClick={() => setUserMenuOpen(false)}
+                              className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                            >
+                              <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+                              Dashboard
+                            </Link>
+                            {user.role === "stylist" && (
+                              <Link
+                                href="/stylist"
+                                role="menuitem"
+                                onClick={() => setUserMenuOpen(false)}
+                                className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                              >
+                                <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                My Profile
+                              </Link>
+                            )}
+                          </div>
+                          <div className="py-1 border-t border-gray-100">
+                            <button
+                              type="button"
+                              role="menuitem"
+                              onClick={() => { logout(); setUserMenuOpen(false); router.push("/"); }}
+                              className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                              Sign out
+                            </button>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </>
+              ) : null}
             </div>
 
             {/* Mobile menu button */}
@@ -305,6 +393,48 @@ export default function Navbar() {
                     </li>
                   ))}
                 </ul>
+
+                {/* Mobile auth */}
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  {user ? (
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-3 px-2 py-2">
+                        <div className="w-9 h-9 rounded-full bg-linear-to-br from-pink-400 via-yellow-300 to-purple-400 flex items-center justify-center text-white text-sm font-bold shrink-0">
+                          {user.name[0].toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-gray-900 truncate">{user.name}</p>
+                          <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => { logout(); setIsOpen(false); router.push("/"); }}
+                        className="w-full flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                        Sign out
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-2">
+                      <Link
+                        href="/Login"
+                        onClick={() => setIsOpen(false)}
+                        className="block text-center px-4 py-2.5 rounded-lg border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        Sign in
+                      </Link>
+                      <Link
+                        href="/register"
+                        onClick={() => setIsOpen(false)}
+                        className="block text-center px-4 py-2.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold transition-colors"
+                      >
+                        Create account
+                      </Link>
+                    </div>
+                  )}
+                </div>
               </div>
             </motion.div>
           )}
