@@ -6,7 +6,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 export async function GET(request, { params }) {
   await sleep(300);
 
-  const id = parseInt(params.id);
+  const { id: rawId } = await params;
+  const id = parseInt(rawId);
   const stylist = stylistsData.find((s) => s.id === id);
 
   if (!stylist) {

@@ -10,9 +10,9 @@ import { useFavorites } from "@/hooks/useFavorites";
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function StarRating({ rating, max = 5, size = "sm" }) {
-  const sz = size === "sm" ? "w-3.5 h-3.5" : "w-5 h-5";
+  const sz = size === "lg" ? "w-5 h-5" : size === "md" ? "w-4 h-4" : "w-3.5 h-3.5";
   return (
-    <div className="flex items-center gap-0.5" aria-label={`${rating} out of 5 stars`}>
+    <div className="flex items-center gap-0.5" aria-label={`${rating} out of ${max} stars`}>
       {Array.from({ length: max }).map((_, i) => (
         <svg
           key={i}
@@ -28,32 +28,36 @@ function StarRating({ rating, max = 5, size = "sm" }) {
   );
 }
 
-function StatPill({ label, value, icon }) {
+function StatCard({ label, value, icon, accent }) {
+  const accentMap = {
+    purple: "bg-purple-50 border-purple-100 text-purple-700",
+    yellow: "bg-yellow-50 border-yellow-100 text-yellow-700",
+    green:  "bg-green-50  border-green-100  text-green-700",
+    blue:   "bg-blue-50   border-blue-100   text-blue-700",
+  };
   return (
-    <div className="flex flex-col items-center p-4 bg-gray-50 rounded-2xl border border-gray-100 text-center">
-      <span className="text-2xl mb-1" aria-hidden="true">{icon}</span>
-      <span className="text-lg font-extrabold text-gray-900">{value}</span>
-      <span className="text-xs text-gray-500 mt-0.5">{label}</span>
+    <div className={`flex flex-col items-center p-4 rounded-2xl border text-center ${accentMap[accent] ?? "bg-gray-50 border-gray-100 text-gray-700"}`}>
+      <span className="text-2xl mb-1.5" aria-hidden="true">{icon}</span>
+      <span className="text-xl font-extrabold">{value}</span>
+      <span className="text-xs font-medium opacity-70 mt-0.5">{label}</span>
     </div>
   );
 }
 
 function ReviewCard({ review }) {
   return (
-    <article className="bg-gray-50 rounded-2xl p-5 border border-gray-100">
+    <article className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-200">
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
           <div
-            className="w-9 h-9 rounded-full bg-linear-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white text-sm font-bold shrink-0"
+            className="w-10 h-10 rounded-full bg-linear-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white text-sm font-bold shrink-0"
             aria-hidden="true"
           >
             {review.author[0]}
           </div>
           <div>
             <p className="text-sm font-semibold text-gray-900">{review.author}</p>
-            <p className="text-xs text-gray-400">
-              <time>{review.date}</time>
-            </p>
+            <p className="text-xs text-gray-400"><time>{review.date}</time></p>
           </div>
         </div>
         <StarRating rating={review.rating} size="sm" />
@@ -63,25 +67,50 @@ function ReviewCard({ review }) {
   );
 }
 
+function ServiceItem({ svc, price }) {
+  const icons = {
+    Hair: "💇‍♀️",
+    Makeup: "💄",
+    Nail: "💅",
+    Barber: "✂️",
+    Braid: "🪢",
+    Lash: "👁️",
+    Skin: "✨",
+    Wax: "🌸",
+  };
+  const icon = Object.entries(icons).find(([k]) => svc.includes(k))?.[1] ?? "✨";
+  return (
+    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100 hover:border-purple-200 hover:bg-purple-50/40 transition-all duration-200 group">
+      <div className="flex items-center gap-3">
+        <div className="w-9 h-9 rounded-lg bg-white border border-gray-100 group-hover:border-purple-200 flex items-center justify-center text-lg shadow-sm shrink-0" aria-hidden="true">
+          {icon}
+        </div>
+        <p className="text-sm font-semibold text-gray-900">{svc}</p>
+      </div>
+      <span className="text-sm font-bold text-purple-700">from ₦{price.toLocaleString()}</span>
+    </div>
+  );
+}
+
 // ── Skeleton ──────────────────────────────────────────────────────────────────
 
 function DetailSkeleton() {
   return (
     <main className="min-h-screen bg-gray-50" aria-busy="true" aria-label="Loading stylist profile">
-      <div className="h-72 bg-gray-200 animate-pulse" />
-      <div className="max-w-5xl mx-auto px-4 -mt-16 pb-16">
-        <div className="bg-white rounded-3xl shadow-xl p-6 sm:p-8">
+      <div className="h-72 sm:h-96 bg-gray-200 animate-pulse" />
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 -mt-20 pb-32">
+        <div className="bg-white rounded-3xl shadow-2xl p-6 sm:p-8">
           <div className="flex flex-col sm:flex-row gap-6 mb-8">
-            <div className="w-28 h-28 rounded-2xl bg-gray-200 animate-pulse shrink-0" />
+            <div className="w-28 h-28 rounded-2xl bg-gray-200 animate-pulse shrink-0 -mt-14 ring-4 ring-white" />
             <div className="flex-1 space-y-3 pt-2">
-              <div className="h-6 w-48 bg-gray-200 animate-pulse rounded" />
-              <div className="h-4 w-32 bg-gray-200 animate-pulse rounded" />
+              <div className="h-7 w-52 bg-gray-200 animate-pulse rounded-lg" />
+              <div className="h-4 w-36 bg-gray-200 animate-pulse rounded" />
               <div className="h-4 w-64 bg-gray-200 animate-pulse rounded" />
             </div>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-16 bg-gray-100 animate-pulse rounded-xl" />
+              <div key={i} className="h-20 bg-gray-100 animate-pulse rounded-2xl" />
             ))}
           </div>
           <div className="space-y-3">
@@ -95,6 +124,43 @@ function DetailSkeleton() {
   );
 }
 
+// ── Portfolio gallery (simulated) ─────────────────────────────────────────────
+
+function PortfolioGallery({ stylist }) {
+  const placeholders = [
+    "/images/background/background1.jpg",
+    "/images/background/background1.jpg",
+    "/images/background/background1.jpg",
+    "/images/background/background1.jpg",
+    "/images/background/background1.jpg",
+    "/images/background/background1.jpg",
+  ];
+
+  return (
+    <div className="mb-8">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-base font-bold text-gray-900">Portfolio</h2>
+        <span className="text-xs text-gray-400 font-medium">{placeholders.length} photos</span>
+      </div>
+      <div className="grid grid-cols-3 gap-1.5 rounded-2xl overflow-hidden">
+        {placeholders.map((src, i) => (
+          <div key={i} className="relative aspect-square bg-gray-100 overflow-hidden group cursor-pointer">
+            <Image
+              src={stylist.image}
+              alt={`Portfolio photo ${i + 1} by ${stylist.name}`}
+              fill
+              sizes="(max-width: 768px) 33vw, 15vw"
+              className="object-cover group-hover:scale-110 transition-transform duration-500"
+              loading="lazy"
+            />
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function StylistDetailPage() {
@@ -102,11 +168,23 @@ export default function StylistDetailPage() {
   const router = useRouter();
   const [imgError, setImgError] = useState(false);
   const [activeTab, setActiveTab] = useState("about");
+  const [copied, setCopied] = useState(false);
 
   const { stylist, isLoading, isError } = useStylist(id);
   const { isFavorited, toggle: toggleFavorite } = useFavorites();
 
   const favorited = stylist ? isFavorited(stylist.id) : false;
+
+  const handleShare = async () => {
+    const url = window.location.href;
+    if (navigator.share) {
+      await navigator.share({ title: stylist?.name, url });
+    } else {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   if (isLoading) return <DetailSkeleton />;
 
@@ -133,309 +211,386 @@ export default function StylistDetailPage() {
   }
 
   const reviews = stylist.reviews ?? [];
-  const serviceIcon = (svc) => {
-    if (svc.includes("Hair")) return "💇‍♀️";
-    if (svc.includes("Makeup")) return "💄";
-    if (svc.includes("Nail")) return "💅";
-    if (svc.includes("Barber")) return "✂️";
-    if (svc.includes("Braid")) return "🪢";
-    return "✨";
-  };
+  const avgRating = reviews.length > 0
+    ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1)
+    : stylist.rating;
+
+  const tabs = [
+    { id: "about",    label: "About" },
+    { id: "services", label: "Services" },
+    { id: "portfolio",label: "Portfolio" },
+    { id: "reviews",  label: `Reviews (${reviews.length})` },
+  ];
 
   return (
     <main className="min-h-screen bg-gray-50">
-      {/* ── Hero banner ── */}
-      <div className="relative h-60 sm:h-72 overflow-hidden bg-linear-to-br from-purple-900 via-purple-800 to-black">
-        <Image
-          src="/images/background/background1.jpg"
-          alt=""
-          fill
-          className="object-cover opacity-30"
-          priority
-        />
-        <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent" />
 
-        <div className="absolute top-4 left-4 sm:top-6 sm:left-6 z-10">
-          <Link
-            href="/stylist"
-            className="inline-flex items-center gap-1.5 text-white/80 hover:text-white text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white rounded"
+      {/* ── Hero banner ── */}
+      <div className="relative h-72 sm:h-96 overflow-hidden bg-linear-to-br from-purple-900 via-purple-800 to-black">
+        <Image
+          src={!imgError ? stylist.image : "/images/background/background1.jpg"}
+          alt={`${stylist.name} cover`}
+          fill
+          className="object-cover opacity-40"
+          priority
+          onError={() => setImgError(true)}
+        />
+        {/* Layered gradient for depth */}
+        <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent" />
+        <div className="absolute inset-0 bg-linear-to-r from-purple-900/30 to-transparent" />
+
+        {/* Nav row */}
+        <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-4 sm:px-6 pt-5 z-10">
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="inline-flex items-center gap-1.5 text-white/80 hover:text-white text-sm font-medium transition-colors bg-white/10 hover:bg-white/20 backdrop-blur-sm px-3.5 py-2 rounded-xl border border-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
             </svg>
-            All Stylists
-          </Link>
+            Back
+          </button>
+
+          <div className="flex items-center gap-2">
+            {/* Share */}
+            <button
+              type="button"
+              onClick={handleShare}
+              aria-label="Share profile"
+              className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/10 flex items-center justify-center text-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            >
+              {copied ? (
+                <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                </svg>
+              )}
+            </button>
+
+            {/* Favorite */}
+            <button
+              type="button"
+              onClick={() => toggleFavorite(stylist.id)}
+              aria-label={favorited ? "Remove from saved" : "Save stylist"}
+              aria-pressed={favorited}
+              className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/10 flex items-center justify-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            >
+              <svg
+                className={`w-4.5 h-4.5 transition-colors ${favorited ? "text-red-400" : "text-white"}`}
+                fill={favorited ? "currentColor" : "none"}
+                stroke="currentColor"
+                strokeWidth={favorited ? 0 : 2}
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {/* Hero identity — bottom of banner */}
+        <div className="absolute bottom-0 left-0 right-0 px-4 sm:px-6 pb-6 z-10">
+          <div className="flex items-end gap-4">
+            {/* Avatar floats on banner */}
+            <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden shadow-2xl ring-4 ring-white/20 shrink-0">
+              {!imgError ? (
+                <Image
+                  src={stylist.image}
+                  alt={stylist.name}
+                  fill
+                  className="object-cover"
+                  sizes="96px"
+                  onError={() => setImgError(true)}
+                />
+              ) : (
+                <div className="w-full h-full bg-linear-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white text-3xl font-bold" aria-hidden="true">
+                  {stylist.name[0]}
+                </div>
+              )}
+            </div>
+            <div className="pb-1">
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-white leading-tight">{stylist.name}</h1>
+                {stylist.available ? (
+                  <span className="inline-flex items-center gap-1 bg-green-500 text-white text-xs font-semibold px-2.5 py-0.5 rounded-full shadow-sm">
+                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" aria-hidden="true" />
+                    Available
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 bg-gray-600/80 text-white text-xs font-medium px-2.5 py-0.5 rounded-full backdrop-blur-sm">
+                    Busy
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-3 flex-wrap text-white/70 text-sm">
+                <span className="flex items-center gap-1">
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  {stylist.location}, Lagos
+                </span>
+                <span className="flex items-center gap-1">
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  {stylist.experience} yrs experience
+                </span>
+                <span className="flex items-center gap-1">
+                  <StarRating rating={stylist.rating} size="sm" />
+                  <span className="font-semibold text-white ml-0.5">{stylist.rating}</span>
+                  <span className="text-white/50">({stylist.reviewCount})</span>
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* ── Main card ── */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 -mt-20 pb-28 relative z-10">
-        <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-6 pb-32 relative z-10">
+        <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100">
 
-          {/* ── Profile header ── */}
-          <div className="p-6 sm:p-8 pb-0">
-            <div className="flex flex-col sm:flex-row gap-5 sm:gap-6 items-start">
-              {/* Avatar */}
-              <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden shadow-xl shrink-0 -mt-12 sm:-mt-16 ring-4 ring-white">
-                {!imgError ? (
-                  <Image
-                    src={stylist.image}
-                    alt={stylist.name}
-                    fill
-                    className="object-cover"
-                    sizes="112px"
-                    onError={() => setImgError(true)}
-                  />
-                ) : (
-                  <div className="w-full h-full bg-linear-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white text-3xl font-bold" aria-hidden="true">
-                    {stylist.name[0]}
-                  </div>
-                )}
-              </div>
-
-              {/* Name block */}
-              <div className="flex-1 min-w-0 sm:pt-2">
-                <div className="flex items-start justify-between gap-3 flex-wrap">
-                  <div>
-                    <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <h1 className="text-xl sm:text-2xl font-extrabold text-gray-900">{stylist.name}</h1>
-                      {stylist.available ? (
-                        <span className="inline-flex items-center gap-1 bg-green-100 text-green-700 text-xs font-semibold px-2.5 py-0.5 rounded-full border border-green-200">
-                          <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" aria-hidden="true" />
-                          Available
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 bg-gray-100 text-gray-500 text-xs font-medium px-2.5 py-0.5 rounded-full">
-                          Busy
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-3 flex-wrap text-sm text-gray-500">
-                      <span className="flex items-center gap-1">
-                        <svg className="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                        {stylist.location}, Lagos
-                      </span>
-                      <span>{stylist.experience} yrs experience</span>
-                    </div>
-                    <div className="flex items-center gap-2 mt-2">
-                      <StarRating rating={stylist.rating} size="sm" />
-                      <span className="text-sm font-semibold text-gray-900">{stylist.rating}</span>
-                      <span className="text-xs text-gray-400">({stylist.reviewCount} reviews)</span>
-                    </div>
-                  </div>
-
-                  {/* Favorite button */}
-                  <button
-                    type="button"
-                    onClick={() => toggleFavorite(stylist.id)}
-                    aria-label={favorited ? "Remove from saved stylists" : "Save stylist"}
-                    aria-pressed={favorited}
-                    className="w-10 h-10 rounded-xl border border-gray-200 flex items-center justify-center hover:border-red-300 hover:bg-red-50 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400"
-                  >
-                    <svg
-                      className={`w-5 h-5 transition-colors ${favorited ? "text-red-500" : "text-gray-400"}`}
-                      fill={favorited ? "currentColor" : "none"}
-                      stroke="currentColor"
-                      strokeWidth={favorited ? 0 : 2}
-                      viewBox="0 0 24 24"
-                      aria-hidden="true"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Service tags */}
-            <div className="flex flex-wrap gap-2 mt-5" aria-label="Services offered">
+          {/* Service tags */}
+          <div className="px-6 sm:px-8 pt-5 pb-1">
+            <div className="flex flex-wrap gap-2" aria-label="Services offered">
               {stylist.services.map((svc) => (
                 <span key={svc} className="text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-100 px-3 py-1.5 rounded-full">
                   {svc}
                 </span>
               ))}
               {stylist.tags?.map((tag) => (
-                <span key={tag} className="text-xs font-medium bg-gray-50 text-gray-600 border border-gray-100 px-3 py-1.5 rounded-full">
+                <span key={tag} className="text-xs font-medium bg-gray-50 text-gray-500 border border-gray-100 px-3 py-1.5 rounded-full">
                   #{tag}
                 </span>
               ))}
             </div>
+          </div>
 
-            {/* Tabs */}
-            <div
-              className="flex gap-6 mt-6 border-b border-gray-100"
-              role="tablist"
-              aria-label="Stylist profile sections"
-            >
-              {["about", "reviews"].map((tab) => (
+          {/* Stats bar */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 px-6 sm:px-8 py-5">
+            <StatCard icon="⭐" value={avgRating} label="Rating" accent="yellow" />
+            <StatCard icon="📅" value={stylist.completedBookings} label="Bookings" accent="purple" />
+            <StatCard icon="⚡" value={stylist.responseTime} label="Response" accent="blue" />
+            <StatCard icon="🔁" value={`${65 + (stylist.id % 30)}%`} label="Repeat clients" accent="green" />
+          </div>
+
+          {/* Tabs */}
+          <div className="border-b border-gray-100 px-6 sm:px-8" role="tablist" aria-label="Stylist profile sections">
+            <div className="flex gap-1 overflow-x-auto scrollbar-none -mb-px">
+              {tabs.map(({ id, label }) => (
                 <button
-                  key={tab}
+                  key={id}
                   type="button"
                   role="tab"
-                  id={`tab-${tab}`}
-                  aria-selected={activeTab === tab}
-                  aria-controls={`tabpanel-${tab}`}
-                  onClick={() => setActiveTab(tab)}
-                  className={`pb-3 text-sm font-semibold capitalize transition-colors border-b-2 -mb-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 rounded-t ${
-                    activeTab === tab
+                  id={`tab-${id}`}
+                  aria-selected={activeTab === id}
+                  aria-controls={`tabpanel-${id}`}
+                  onClick={() => setActiveTab(id)}
+                  className={`shrink-0 pb-3.5 pt-1 px-3 text-sm font-semibold capitalize transition-colors border-b-2 -mb-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 rounded-t whitespace-nowrap ${
+                    activeTab === id
                       ? "border-purple-600 text-purple-700"
                       : "border-transparent text-gray-400 hover:text-gray-600"
                   }`}
                 >
-                  {tab === "reviews" ? `Reviews (${reviews.length})` : tab}
+                  {label}
                 </button>
               ))}
             </div>
           </div>
 
           {/* ── Tab panels ── */}
-          <div className="p-6 sm:p-8 pt-6">
+          <div className="p-6 sm:p-8">
 
-            {/* About tab */}
-            <div
-              id="tabpanel-about"
-              role="tabpanel"
-              aria-labelledby="tab-about"
-              hidden={activeTab !== "about"}
-            >
-              {activeTab === "about" && (
-                <div className="animate-fade-in">
-                  {/* Stats grid */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
-                    <StatPill icon="⭐" value={stylist.rating} label="Rating" />
-                    <StatPill icon="📅" value={stylist.completedBookings} label="Bookings" />
-                    <StatPill icon="⚡" value={stylist.responseTime} label="Response" />
-                    <StatPill icon="🔁" value={`${65 + (stylist.id % 30)}%`} label="Repeat clients" />
-                  </div>
-
-                  {/* Bio */}
-                  <div className="mb-8">
-                    <h2 className="text-base font-bold text-gray-900 mb-3">About</h2>
-                    <p className="text-sm text-gray-600 leading-relaxed">
-                      {stylist.bio || (
-                        <>
-                          {stylist.name} is a highly skilled beauty professional based in {stylist.location}, Lagos.
-                          With {stylist.experience} years of experience, they specialise in{" "}
-                          <strong>{stylist.services.join(", ")}</strong> and have built a loyal clientele through
-                          dedication to quality and client satisfaction.
-                        </>
-                      )}
-                    </p>
-                  </div>
-
-                  {/* Services offered */}
-                  <div className="mb-8">
-                    <h2 className="text-base font-bold text-gray-900 mb-3">Services Offered</h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {stylist.services.map((svc) => (
-                        <div key={svc} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
-                          <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center text-base shrink-0" aria-hidden="true">
-                            {serviceIcon(svc)}
-                          </div>
-                          <div>
-                            <p className="text-sm font-semibold text-gray-900">{svc}</p>
-                            <p className="text-xs text-gray-400">Starting from ₦{stylist.price.toLocaleString()}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Quick facts */}
-                  <div>
-                    <h2 className="text-base font-bold text-gray-900 mb-3">Quick Info</h2>
-                    <dl className="grid grid-cols-2 gap-3 text-sm">
-                      {[
-                        { label: "Location", value: stylist.location },
-                        { label: "Experience", value: `${stylist.experience} years` },
-                        { label: "Response time", value: stylist.responseTime },
-                        { label: "Languages", value: stylist.experience >= 5 ? "English, Yoruba" : "English" },
-                      ].map(({ label, value }) => (
-                        <div key={label} className="flex flex-col gap-0.5">
-                          <dt className="text-xs text-gray-400 font-medium">{label}</dt>
-                          <dd className="text-gray-900 font-semibold">{value}</dd>
-                        </div>
-                      ))}
-                    </dl>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Reviews tab */}
-            <div
-              id="tabpanel-reviews"
-              role="tabpanel"
-              aria-labelledby="tab-reviews"
-              hidden={activeTab !== "reviews"}
-            >
-              {activeTab === "reviews" && (
-                <div className="animate-fade-in space-y-4">
-                  {/* Rating summary */}
-                  <div className="flex items-center gap-4 p-4 bg-purple-50 rounded-2xl border border-purple-100 mb-6">
-                    <div className="text-center">
-                      <div className="text-4xl font-extrabold text-purple-700" aria-label={`${stylist.rating} average rating`}>
-                        {stylist.rating}
-                      </div>
-                      <StarRating rating={stylist.rating} size="md" />
-                      <p className="text-xs text-gray-500 mt-1">{stylist.reviewCount} reviews</p>
-                    </div>
-                    <div className="flex-1 flex flex-col gap-1.5" aria-label="Rating distribution">
-                      {[5, 4, 3, 2, 1].map((star) => {
-                        const pct = star >= Math.floor(stylist.rating)
-                          ? 70 + (star - Math.floor(stylist.rating)) * 10
-                          : Math.max(5, 30 - (Math.floor(stylist.rating) - star) * 20);
-                        return (
-                          <div key={star} className="flex items-center gap-2">
-                            <span className="text-xs text-gray-500 w-3" aria-hidden="true">{star}</span>
-                            <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden" role="progressbar" aria-label={`${star} star: ${Math.min(100, pct)}%`} aria-valuenow={Math.min(100, pct)} aria-valuemin={0} aria-valuemax={100}>
-                              <div className="h-full bg-yellow-400 rounded-full" style={{ width: `${Math.min(100, pct)}%` }} />
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {reviews.length > 0
-                    ? reviews.map((review) => <ReviewCard key={review.id} review={review} />)
-                    : (
-                      <p className="text-sm text-gray-400 text-center py-8">No reviews yet.</p>
+            {/* About */}
+            {activeTab === "about" && (
+              <div id="tabpanel-about" role="tabpanel" aria-labelledby="tab-about">
+                <div className="mb-6">
+                  <h2 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">About</h2>
+                  <p className="text-sm text-gray-600 leading-7">
+                    {stylist.bio || (
+                      <>
+                        {stylist.name} is a highly skilled beauty professional based in {stylist.location}, Lagos.
+                        With <strong>{stylist.experience} years</strong> of hands-on experience, they specialise in{" "}
+                        <strong>{stylist.services.join(", ")}</strong> and have built a loyal clientele through
+                        exceptional attention to detail, creativity, and client satisfaction. Known for tailoring
+                        every look to the individual, {stylist.name.split(" ")[0]} brings both technical mastery
+                        and genuine warmth to every appointment.
+                      </>
                     )}
+                  </p>
                 </div>
-              )}
-            </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
+                  {[
+                    { label: "Location", value: stylist.location, icon: "📍" },
+                    { label: "Experience", value: `${stylist.experience} years`, icon: "🎓" },
+                    { label: "Response time", value: stylist.responseTime, icon: "⚡" },
+                    { label: "Languages", value: stylist.experience >= 5 ? "English, Yoruba" : "English", icon: "🌍" },
+                    { label: "Style", value: stylist.tags?.[0] ?? "Versatile", icon: "💫" },
+                    { label: "Availability", value: stylist.available ? "Open now" : "Busy", icon: "🟢" },
+                  ].map(({ label, value, icon }) => (
+                    <div key={label} className="flex items-start gap-3 p-3.5 bg-gray-50 rounded-xl border border-gray-100">
+                      <span className="text-lg mt-0.5 shrink-0" aria-hidden="true">{icon}</span>
+                      <div>
+                        <dt className="text-xs text-gray-400 font-medium">{label}</dt>
+                        <dd className="text-sm text-gray-900 font-semibold mt-0.5">{value}</dd>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {stylist.certifications?.length > 0 && (
+                  <div>
+                    <h2 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">Certifications</h2>
+                    <div className="flex flex-wrap gap-2">
+                      {stylist.certifications.map((cert) => (
+                        <span key={cert} className="inline-flex items-center gap-1.5 text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-100 px-3 py-1.5 rounded-full">
+                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                          {cert}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Services */}
+            {activeTab === "services" && (
+              <div id="tabpanel-services" role="tabpanel" aria-labelledby="tab-services">
+                <p className="text-sm text-gray-500 mb-4">
+                  All prices are starting rates. Final price may vary based on hair length, complexity, and products used.
+                </p>
+                <div className="flex flex-col gap-2">
+                  {stylist.services.map((svc) => (
+                    <ServiceItem key={svc} svc={svc} price={stylist.price} />
+                  ))}
+                </div>
+                <div className="mt-6 p-4 bg-purple-50 rounded-2xl border border-purple-100">
+                  <div className="flex items-start gap-3">
+                    <span className="text-xl shrink-0 mt-0.5" aria-hidden="true">💡</span>
+                    <div>
+                      <p className="text-sm font-semibold text-purple-800 mb-0.5">Custom requests welcome</p>
+                      <p className="text-xs text-purple-600 leading-relaxed">
+                        Have a specific look in mind? Book and include a note with your inspiration — {stylist.name.split(" ")[0]} loves bringing creative visions to life.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Portfolio */}
+            {activeTab === "portfolio" && (
+              <div id="tabpanel-portfolio" role="tabpanel" aria-labelledby="tab-portfolio">
+                <PortfolioGallery stylist={stylist} />
+                <p className="text-xs text-gray-400 text-center mt-2">
+                  Showing recent work by {stylist.name.split(" ")[0]}
+                </p>
+              </div>
+            )}
+
+            {/* Reviews */}
+            {activeTab === "reviews" && (
+              <div id="tabpanel-reviews" role="tabpanel" aria-labelledby="tab-reviews">
+                {/* Rating summary banner */}
+                <div className="flex items-center gap-5 p-5 bg-linear-to-br from-purple-50 to-pink-50 rounded-2xl border border-purple-100 mb-6">
+                  <div className="text-center shrink-0">
+                    <div className="text-5xl font-extrabold text-purple-700 leading-none" aria-label={`${avgRating} average rating`}>
+                      {avgRating}
+                    </div>
+                    <StarRating rating={Number(avgRating)} size="md" />
+                    <p className="text-xs text-gray-500 mt-1">{stylist.reviewCount} reviews</p>
+                  </div>
+
+                  <div className="flex-1 flex flex-col gap-1.5" aria-label="Rating distribution">
+                    {[5, 4, 3, 2, 1].map((star) => {
+                      const pct = star >= Math.floor(stylist.rating)
+                        ? Math.min(100, 70 + (star - Math.floor(stylist.rating)) * 10)
+                        : Math.max(4, 30 - (Math.floor(stylist.rating) - star) * 20);
+                      return (
+                        <div key={star} className="flex items-center gap-2">
+                          <span className="text-xs text-gray-400 w-3 shrink-0" aria-hidden="true">{star}</span>
+                          <div
+                            className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden"
+                            role="progressbar"
+                            aria-label={`${star} star: ${pct}%`}
+                            aria-valuenow={pct}
+                            aria-valuemin={0}
+                            aria-valuemax={100}
+                          >
+                            <div className="h-full bg-yellow-400 rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+                          </div>
+                          <span className="text-xs text-gray-400 w-8 text-right shrink-0">{pct}%</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {reviews.length > 0 ? (
+                  <div className="flex flex-col gap-3">
+                    {reviews.map((review) => <ReviewCard key={review.id} review={review} />)}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center py-12 text-center">
+                    <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mb-3">
+                      <svg className="w-6 h-6 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                      </svg>
+                    </div>
+                    <p className="text-sm font-semibold text-gray-500 mb-1">No reviews yet</p>
+                    <p className="text-xs text-gray-400">Be the first to book and leave a review!</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       {/* ── Sticky booking footer ── */}
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-gray-200 shadow-2xl">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between gap-4">
           <div>
             <p className="text-xs text-gray-400">Starting from</p>
             <p className="text-xl font-extrabold text-purple-700">₦{stylist.price.toLocaleString()}</p>
           </div>
-          {stylist.available ? (
+
+          <div className="flex items-center gap-2 flex-1 max-w-sm justify-end">
             <Link
-              href={`/book-appointment?stylist=${stylist.id}`}
-              className="flex-1 max-w-xs py-3 text-sm font-bold text-center rounded-xl shadow-lg bg-purple-600 hover:bg-purple-700 text-white hover:shadow-purple-200 hover:-translate-y-0.5 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-2"
+              href={`/gift-service`}
+              className="px-4 py-2.5 text-xs font-semibold text-purple-700 border border-purple-200 rounded-xl hover:bg-purple-50 transition-colors whitespace-nowrap"
             >
-              Book Appointment
+              Gift this
             </Link>
-          ) : (
-            <button
-              type="button"
-              disabled
-              className="flex-1 max-w-xs py-3 text-sm font-bold text-center rounded-xl bg-gray-200 text-gray-400 cursor-not-allowed"
-              aria-label="This stylist is currently unavailable for booking"
-            >
-              Currently Unavailable
-            </button>
-          )}
+
+            {stylist.available ? (
+              <Link
+                href={`/booking/${stylist.id}`}
+                className="flex-1 py-2.5 text-sm font-bold text-center rounded-xl shadow-lg bg-purple-600 hover:bg-purple-700 text-white hover:shadow-purple-200 hover:-translate-y-0.5 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-2"
+              >
+                Book Appointment
+              </Link>
+            ) : (
+              <button
+                type="button"
+                disabled
+                className="flex-1 py-2.5 text-sm font-bold text-center rounded-xl bg-gray-200 text-gray-400 cursor-not-allowed"
+                aria-label="This stylist is currently unavailable for booking"
+              >
+                Currently Unavailable
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </main>
