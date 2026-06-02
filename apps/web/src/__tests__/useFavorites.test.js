@@ -2,6 +2,8 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useFavorites } from "@/hooks/useFavorites";
 
+// Favourite IDs are stylist cuids (strings), so these tests use string IDs.
+
 // ── localStorage mock ─────────────────────────────────────────────────────────
 
 const store = {};
@@ -32,53 +34,53 @@ describe("useFavorites", () => {
   });
 
   it("hydrates from localStorage on mount", () => {
-    store["glamly_favorites"] = JSON.stringify([1, 2, 3]);
+    store["glamly_favorites"] = JSON.stringify(["a1", "b2", "c3"]);
     const { result } = renderHook(() => useFavorites());
     expect(result.current.count).toBe(3);
-    expect(result.current.isFavorited(2)).toBe(true);
+    expect(result.current.isFavorited("b2")).toBe(true);
   });
 
   it("toggle adds an ID that is not present", () => {
     const { result } = renderHook(() => useFavorites());
-    act(() => result.current.toggle(42));
-    expect(result.current.isFavorited(42)).toBe(true);
+    act(() => result.current.toggle("sty42"));
+    expect(result.current.isFavorited("sty42")).toBe(true);
     expect(result.current.count).toBe(1);
   });
 
   it("toggle removes an ID that is already present", () => {
-    store["glamly_favorites"] = JSON.stringify([42]);
+    store["glamly_favorites"] = JSON.stringify(["sty42"]);
     const { result } = renderHook(() => useFavorites());
-    act(() => result.current.toggle(42));
-    expect(result.current.isFavorited(42)).toBe(false);
+    act(() => result.current.toggle("sty42"));
+    expect(result.current.isFavorited("sty42")).toBe(false);
     expect(result.current.count).toBe(0);
   });
 
   it("add stores the ID persistently", () => {
     const { result } = renderHook(() => useFavorites());
-    act(() => result.current.add(7));
-    expect(result.current.isFavorited(7)).toBe(true);
-    expect(JSON.parse(store["glamly_favorites"])).toContain(7);
+    act(() => result.current.add("sty7"));
+    expect(result.current.isFavorited("sty7")).toBe(true);
+    expect(JSON.parse(store["glamly_favorites"])).toContain("sty7");
   });
 
   it("remove deletes the ID", () => {
-    store["glamly_favorites"] = JSON.stringify([7, 8]);
+    store["glamly_favorites"] = JSON.stringify(["sty7", "sty8"]);
     const { result } = renderHook(() => useFavorites());
-    act(() => result.current.remove(7));
-    expect(result.current.isFavorited(7)).toBe(false);
-    expect(result.current.isFavorited(8)).toBe(true);
+    act(() => result.current.remove("sty7"));
+    expect(result.current.isFavorited("sty7")).toBe(false);
+    expect(result.current.isFavorited("sty8")).toBe(true);
   });
 
   it("isFavorited returns false for absent IDs", () => {
     const { result } = renderHook(() => useFavorites());
-    expect(result.current.isFavorited(999)).toBe(false);
+    expect(result.current.isFavorited("nope")).toBe(false);
   });
 
   it("persists state to localStorage on every change", () => {
     const { result } = renderHook(() => useFavorites());
-    act(() => result.current.add(1));
-    act(() => result.current.add(2));
+    act(() => result.current.add("one"));
+    act(() => result.current.add("two"));
     const stored = new Set(JSON.parse(store["glamly_favorites"]));
-    expect(stored.has(1)).toBe(true);
-    expect(stored.has(2)).toBe(true);
+    expect(stored.has("one")).toBe(true);
+    expect(stored.has("two")).toBe(true);
   });
 });
