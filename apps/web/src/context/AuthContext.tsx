@@ -41,6 +41,12 @@ function clearRoleCookie(): void {
   document.cookie = `${ROLE_COOKIE}=; path=/; max-age=0; samesite=lax`;
 }
 
+/** True when the hint cookie suggests a session worth attempting to restore. */
+function hasRoleHint(): boolean {
+  if (typeof document === "undefined") return false;
+  return document.cookie.split("; ").some((c) => c.startsWith(`${ROLE_COOKIE}=`) && c.length > ROLE_COOKIE.length + 1);
+}
+
 // ─── State ──────────────────────────────────────────────────────────────────────
 
 type AuthStatus = "loading" | "authenticated" | "unauthenticated";
@@ -129,11 +135,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     let active = true;
-    refreshSession().then((result) => {
-      if (!active) return;
-      if (result) applySession(result);
-      else dispatch({ type: "UNAUTHENTICATED" });
-    });
+    // Only probe the refresh endpoint when a hint cookie suggests an existing
+    // session — a logged-out visitor shouldn't trigger a 401 on every page load.
+    if (hasRoleHint()) {
+      refreshSession().then((result) => {
+        if (!active) return;
+        if (result) applySession(result);
+        else {
+          clearRoleCookie();
+          dispatch({ type: "UNAUTHENTICATED" });
+        }
+      });
+    } else {
+      dispatch({ type: "UNAUTHENTICATED" });
+    }
 
     return () => {
       active = false;

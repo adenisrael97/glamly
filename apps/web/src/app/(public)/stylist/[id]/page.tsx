@@ -212,7 +212,7 @@ export default function StylistDetailPage() {
     <main className="min-h-screen bg-gray-50">
       {/* ── Hero banner ── */}
       <div className="relative h-72 sm:h-96 overflow-hidden bg-linear-to-br from-purple-900 via-purple-800 to-black">
-        <Image src={cover} alt={`${name} cover`} fill className="object-cover opacity-40" priority onError={() => setImgError(true)} />
+        <Image src={cover} alt={`${name} cover`} fill sizes="100vw" className="object-cover opacity-40" priority onError={() => setImgError(true)} />
         <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent" />
         <div className="absolute inset-0 bg-linear-to-r from-purple-900/30 to-transparent" />
 

@@ -126,7 +126,7 @@ export default function RegisterPage() {
     <main className="min-h-screen flex">
       {/* ── Left brand panel ── */}
       <div className="hidden lg:flex lg:w-5/12 relative flex-col items-center justify-center p-12 overflow-hidden" aria-hidden="true">
-        <Image src="/images/background/background1.jpg" alt="" fill className="object-cover" priority />
+        <Image src="/images/background/background1.jpg" alt="" fill sizes="(max-width: 1024px) 0px, 42vw" className="object-cover" priority />
         <div className="absolute inset-0 bg-linear-to-br from-purple-900/95 via-purple-800/90 to-black/80" />
         <div className="relative z-10 flex flex-col items-center text-center max-w-xs">
           <div className="w-16 h-16 rounded-full flex items-center justify-center bg-linear-to-br from-pink-400 via-yellow-300 to-purple-400 shadow-xl mb-6">

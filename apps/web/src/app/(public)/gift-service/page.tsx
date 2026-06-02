@@ -44,7 +44,7 @@ function SuccessScreen({ fields }: { fields: GiftFields }) {
     <div className="flex flex-col items-center text-center py-8 px-4 max-w-md mx-auto">
       {/* Animated gift icon */}
       <div className="relative mb-6">
-        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-yellow-400 via-pink-400 to-purple-500 flex items-center justify-center shadow-2xl">
+        <div className="w-24 h-24 rounded-full bg-linear-to-br from-yellow-400 via-pink-400 to-purple-500 flex items-center justify-center shadow-2xl">
           <span className="text-5xl">🎁</span>
         </div>
         <div className="absolute -top-1 -right-1 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center shadow-lg">
@@ -64,7 +64,7 @@ function SuccessScreen({ fields }: { fields: GiftFields }) {
       </p>
 
       {/* Gift voucher card */}
-      <div className="w-full bg-gradient-to-br from-purple-900 via-purple-800 to-black rounded-2xl p-6 mb-6 text-left shadow-xl relative overflow-hidden">
+      <div className="w-full bg-linear-to-br from-purple-900 via-purple-800 to-black rounded-2xl p-6 mb-6 text-left shadow-xl relative overflow-hidden">
         <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-400/10 rounded-full -translate-y-1/2 translate-x-1/2" />
         <div className="absolute bottom-0 left-0 w-24 h-24 bg-purple-400/10 rounded-full translate-y-1/2 -translate-x-1/2" />
         <div className="relative z-10">
@@ -155,18 +155,18 @@ export default function GiftServicePage() {
 
   if (success) {
     return (
-      <main className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 py-16 px-4">
+      <main className="min-h-screen bg-linear-to-br from-purple-50 via-white to-pink-50 py-16 px-4">
         <SuccessScreen fields={fields} />
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50">
+    <main className="min-h-screen bg-linear-to-br from-purple-50 via-white to-pink-50">
       {/* ── Hero banner ── */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-purple-900 via-purple-800 to-pink-800 py-14 px-4">
+      <div className="relative overflow-hidden bg-linear-to-r from-purple-900 via-purple-800 to-pink-800 py-14 px-4">
         <div className="absolute inset-0 opacity-20">
-          <Image src="/images/background/background1.jpg" alt="" fill className="object-cover" />
+          <Image src="/images/background/background1.jpg" alt="" fill sizes="100vw" className="object-cover" />
         </div>
         <div className="relative z-10 max-w-3xl mx-auto text-center">
           <span className="inline-block bg-yellow-400 text-black text-xs font-bold px-4 py-1.5 rounded-full mb-4 tracking-widest uppercase shadow">
@@ -189,7 +189,7 @@ export default function GiftServicePage() {
           <div className="lg:col-span-3">
             <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 sm:p-8">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center text-xl">
+                <div className="w-10 h-10 rounded-xl bg-linear-to-br from-purple-100 to-pink-100 flex items-center justify-center text-xl">
                   🎁
                 </div>
                 <div>
@@ -311,7 +311,7 @@ export default function GiftServicePage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all duration-200 flex items-center justify-center gap-2 text-sm shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+                  className="w-full py-4 bg-linear-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all duration-200 flex items-center justify-center gap-2 text-sm shadow-lg hover:shadow-xl hover:-translate-y-0.5"
                 >
                   {loading && <SpinnerIcon />}
                   {loading ? "Sending gift…" : "🎁 Send the Gift"}
@@ -346,7 +346,7 @@ export default function GiftServicePage() {
             </div>
 
             {/* Popular gifts */}
-            <div className="bg-gradient-to-br from-purple-900 to-black rounded-2xl p-6 shadow-lg">
+            <div className="bg-linear-to-br from-purple-900 to-black rounded-2xl p-6 shadow-lg">
               <h3 className="font-bold text-white mb-1 text-sm uppercase tracking-wide">Popular Gifts 🔥</h3>
               <p className="text-purple-300 text-xs mb-4">Most gifted services this month</p>
               <div className="flex flex-col gap-2">

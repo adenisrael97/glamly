@@ -192,7 +192,7 @@ function BookFlow({ stylistId, initialServiceId }: { stylistId: string; initialS
   return (
     <main className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-900 via-purple-800 to-purple-700 text-white py-10 px-4">
+      <div className="bg-linear-to-r from-purple-900 via-purple-800 to-purple-700 text-white py-10 px-4">
         <div className="max-w-3xl mx-auto">
           <Link href={`/stylist/${stylist.id}`} className="text-purple-300 hover:text-white text-sm flex items-center gap-1 mb-4 transition-colors">
             ← Back to {stylist.user.name}

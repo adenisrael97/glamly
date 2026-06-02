@@ -204,7 +204,7 @@ export default function BookingDetailPage() {
         </Link>
 
         <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
-          <div className="bg-gradient-to-r from-purple-900 to-purple-700 text-white p-6">
+          <div className="bg-linear-to-r from-purple-900 to-purple-700 text-white p-6">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h1 className="text-xl font-extrabold">{booking.service.name}</h1>

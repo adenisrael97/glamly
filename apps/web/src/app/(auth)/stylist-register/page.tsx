@@ -89,7 +89,7 @@ function SuccessScreen({ name }: { name: string }) {
   return (
     <div className="flex flex-col items-center text-center py-8 px-4">
       <div className="relative mb-6">
-        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-500 to-pink-400 flex items-center justify-center shadow-xl">
+        <div className="w-20 h-20 rounded-full bg-linear-to-br from-purple-500 to-pink-400 flex items-center justify-center shadow-xl">
           <svg className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
@@ -482,10 +482,10 @@ export default function StylistRegisterPage() {
     <main className="min-h-screen flex">
       {/* Left brand panel */}
       <div className="hidden lg:flex lg:w-5/12 relative flex-col items-center justify-center p-12 overflow-hidden">
-        <Image src="/images/background/background1.jpg" alt="" fill className="object-cover" priority />
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-900/95 via-purple-800/90 to-black/80" />
+        <Image src="/images/background/background1.jpg" alt="" fill sizes="(max-width: 1024px) 0px, 42vw" className="object-cover" priority />
+        <div className="absolute inset-0 bg-linear-to-br from-purple-900/95 via-purple-800/90 to-black/80" />
         <div className="relative z-10 flex flex-col items-center text-center max-w-xs">
-          <div className="w-16 h-16 rounded-full flex items-center justify-center bg-gradient-to-br from-pink-400 via-yellow-300 to-purple-400 shadow-xl mb-6">
+          <div className="w-16 h-16 rounded-full flex items-center justify-center bg-linear-to-br from-pink-400 via-yellow-300 to-purple-400 shadow-xl mb-6">
             <svg width="40" height="40" viewBox="0 0 32 32" fill="none">
               <circle cx="16" cy="16" r="16" fill="url(#srg)" />
               <path d="M16 8c2.5 0 4.5 2 4.5 4.5S18.5 17 16 17s-4.5-2-4.5-4.5S13.5 8 16 8z" fill="#fff" />
