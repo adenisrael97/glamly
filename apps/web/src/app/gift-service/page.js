@@ -28,7 +28,9 @@ function validate(fields) {
 }
 
 function SuccessScreen({ fields }) {
-  const giftCode = `GLAM-${Math.random().toString(36).toUpperCase().slice(2, 8)}`;
+  // Computed once per mount — Math.random() during render is impure and would
+  // regenerate the gift code on every re-render.
+  const [giftCode] = useState(() => `GLAM-${Math.random().toString(36).toUpperCase().slice(2, 8)}`);
   return (
     <div className="flex flex-col items-center text-center py-8 px-4 max-w-md mx-auto">
       {/* Animated gift icon */}

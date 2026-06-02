@@ -71,7 +71,9 @@ function StepBar({ current, total }) {
 
 // ── Confirmation screen ─────────────────────────────────
 function ConfirmationScreen({ booking }) {
-  const ref = `GLM-${Date.now().toString(36).toUpperCase().slice(-6)}`;
+  // Computed once per mount — Date.now() during render is impure and would
+  // regenerate the reference on every re-render.
+  const [ref] = useState(() => `GLM-${Date.now().toString(36).toUpperCase().slice(-6)}`);
   return (
     <div className="max-w-lg mx-auto flex flex-col items-center text-center py-6">
       <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-500 to-pink-400 flex items-center justify-center shadow-xl mb-5">

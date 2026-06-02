@@ -64,10 +64,15 @@ export default function SearchPage() {
     }
   }, [searchParams]);
 
-  // Reset to page 1 whenever any filter changes
-  useEffect(() => {
+  // Reset to page 1 whenever any filter changes. Adjusting state during render
+  // (the React-recommended alternative to setState inside an effect) avoids the
+  // extra render pass and the cascading-render warning.
+  const filterSignature = `${debouncedQuery}|${debouncedLocation}|${activeService}|${minRating}|${priceRange.min}-${priceRange.max}|${sortBy}|${showUnavailable}`;
+  const [prevFilterSignature, setPrevFilterSignature] = useState(filterSignature);
+  if (filterSignature !== prevFilterSignature) {
+    setPrevFilterSignature(filterSignature);
     setCurrentPage(1);
-  }, [debouncedQuery, debouncedLocation, activeService, minRating, priceRange, sortBy, showUnavailable]);
+  }
 
   // ── Handlers ───────────────────────────────────────────────
   const handleToggleFavorite = useCallback((id) => toggleFavorite(id), [toggleFavorite]);
