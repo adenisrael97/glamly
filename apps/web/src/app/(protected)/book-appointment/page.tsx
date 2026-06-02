@@ -86,7 +86,7 @@ function StylistPicker() {
               >
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="font-bold text-gray-900">{s.user.name}</h3>
-                  <span className="text-xs text-yellow-600 font-semibold">★ {s.rating.toFixed(1)}</span>
+                  <span className="text-xs text-yellow-700 font-semibold">★ {s.rating.toFixed(1)}</span>
                 </div>
                 <p className="text-sm text-gray-500">{s.specialty} · {s.location}</p>
                 <p className="mt-3 text-purple-700 font-extrabold">From ₦{s.priceFrom.toLocaleString()}</p>

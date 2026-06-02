@@ -59,6 +59,7 @@ export default function Hero() {
           {/* Service Dropdown */}
           <select
             name="service"
+            aria-label="Service type"
             className="p-3 rounded-lg flex-1 border border-gray-300 text-gray-700 focus:ring-2 focus:ring-purple-400 focus:border-purple-400 transition"
           >
             <option value="Hair Styling">Hair Styling</option>
@@ -72,6 +73,7 @@ export default function Hero() {
           <input
             type="text"
             name="location"
+            aria-label="Location"
             placeholder="Enter your location"
             className="p-3 rounded-lg flex-1 border border-gray-300 text-gray-700 focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 transition"
           />
@@ -79,6 +81,7 @@ export default function Hero() {
           <input
             type="date"
             name="date"
+            aria-label="Appointment date"
             className="p-3 rounded-lg flex-1 border border-gray-300 text-gray-700 focus:ring-2 focus:ring-gray-400 focus:border-gray-400 transition"
           />
           {/* Search Button */}

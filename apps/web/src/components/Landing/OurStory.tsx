@@ -27,7 +27,7 @@ const features = [
 
 const stats = [
   { value: "10+", label: "Years of Experience", borderClass: "border-purple-400", textClass: "text-purple-600" },
-  { value: "5,000+", label: "Happy Clients", borderClass: "border-yellow-400", textClass: "text-yellow-600" },
+  { value: "5,000+", label: "Happy Clients", borderClass: "border-yellow-400", textClass: "text-yellow-700" },
   { value: "25", label: "Expert Stylists", borderClass: "border-pink-400", textClass: "text-pink-600" },
   { value: "12", label: "Industry Awards", borderClass: "border-green-400", textClass: "text-green-600" },
 ];
@@ -42,7 +42,7 @@ export default function OurStory() {
           <h2 className="text-3xl md:text-4xl font-extrabold text-purple-800 mb-2 uppercase">
             Our Story
           </h2>
-          <p className="text-lg md:text-xl text-yellow-600 font-semibold mb-2">
+          <p className="text-lg md:text-xl text-yellow-700 font-semibold mb-2">
             A Decade of Artistry
           </p>
           <p className="text-gray-700 mb-8 leading-relaxed text-justify">
@@ -57,9 +57,9 @@ export default function OurStory() {
                 className="flex flex-col items-center text-center w-28 hover:scale-105 transition-transform"
               >
                 {item.icon}
-                <h4 className="text-sm font-bold mt-1 text-gray-800">
+                <h3 className="text-sm font-bold mt-1 text-gray-800">
                   {item.title}
-                </h4>
+                </h3>
                 <p className="text-xs text-gray-600">{item.desc}</p>
               </div>
             ))}

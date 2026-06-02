@@ -143,7 +143,7 @@ export default function Navbar() {
                 <span className="text-lg sm:text-xl font-bold text-white leading-tight tracking-wide">
                   GlamHub
                 </span>
-                <span className="text-xs sm:text-sm font-medium text-gray-700 leading-tight tracking-widest">
+                <span className="text-xs sm:text-sm font-medium text-gray-300 leading-tight tracking-widest">
                   UNISEX SALON
                 </span>
               </div>
@@ -179,6 +179,7 @@ export default function Navbar() {
                           >
                             <input
                               type="text"
+                              aria-label="Service"
                               placeholder="Service (e.g., Makeup)"
                               value={service}
                               onChange={(e) => setService(e.target.value)}
@@ -186,6 +187,7 @@ export default function Navbar() {
                             />
                             <input
                               type="text"
+                              aria-label="Location"
                               placeholder="Location"
                               value={location}
                               onChange={(e) => setLocation(e.target.value)}
@@ -331,9 +333,16 @@ export default function Navbar() {
             {/* Mobile menu button */}
             <button
               onClick={() => setIsOpen(!isOpen)}
+              aria-label={isOpen ? "Close navigation menu" : "Open navigation menu"}
+              aria-expanded={isOpen}
+              aria-controls="mobile-menu"
               className="lg:hidden w-10 h-10 flex items-center justify-center text-white hover:text-yellow-500 transition-colors"
             >
-              {isOpen ? <FaTimes className="text-xl" /> : <FaBars className="text-xl" />}
+              {isOpen ? (
+                <FaTimes className="text-xl" aria-hidden="true" />
+              ) : (
+                <FaBars className="text-xl" aria-hidden="true" />
+              )}
             </button>
           </div>
         </nav>
@@ -346,6 +355,7 @@ export default function Navbar() {
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.3 }}
+              id="mobile-menu"
               className="lg:hidden bg-gray-100 border-t border-gray-200 overflow-hidden"
             >
               <div className="max-w-7xl mx-auto px-4 py-4">
@@ -353,6 +363,7 @@ export default function Navbar() {
                 <div className="flex flex-col gap-2 mb-4">
                   <input
                     type="text"
+                    aria-label="Service"
                     placeholder="Service (e.g., Makeup)"
                     value={service}
                     onChange={(e) => setService(e.target.value)}
@@ -360,6 +371,7 @@ export default function Navbar() {
                   />
                   <input
                     type="text"
+                    aria-label="Location"
                     placeholder="Location"
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}

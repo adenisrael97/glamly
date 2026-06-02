@@ -10,7 +10,7 @@ export default function Hairstylists() {
         <h2 className="text-3xl md:text-4xl font-bold mb-2 text-purple-800 tracking-tight uppercase">
           MEET THE ARTISTS
         </h2>
-        <p className="text-lg md:text-xl text-yellow-600 font-semibold mb-2">Our Expert Team</p>
+        <p className="text-lg md:text-xl text-yellow-700 font-semibold mb-2">Our Expert Team</p>
         <p className="text-base md:text-lg text-gray-700 mb-6">
           Meet the creative minds behind GlamHub. Our expert stylists combine skill and passion to help you look and feel your best every day.
         </p>
@@ -21,12 +21,13 @@ export default function Hairstylists() {
           <Link
             key={stylist.id}
             href="/stylist"
-            aria-label={`View profile of ${stylist.name}`}
             className="relative w-full h-96 rounded-2xl overflow-hidden shadow-2xl border border-gray-200 flex items-end justify-center bg-gray-100 group"
           >
+            {/* Decorative: the stylist's name is already announced via the heading
+                below, so an empty alt avoids a doubled accessible name. */}
             <Image
               src={stylist.image}
-              alt={stylist.name}
+              alt=""
               fill
               sizes="(max-width: 768px) 100vw, 400px"
               className="object-cover group-hover:scale-105 transition-transform duration-300"

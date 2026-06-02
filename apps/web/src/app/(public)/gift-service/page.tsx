@@ -54,7 +54,7 @@ function SuccessScreen({ fields }: { fields: GiftFields }) {
         </div>
       </div>
 
-      <span className="text-yellow-600 text-xs font-bold tracking-widest uppercase mb-2">Gift Booked!</span>
+      <span className="text-yellow-700 text-xs font-bold tracking-widest uppercase mb-2">Gift Booked!</span>
       <h2 className="text-2xl font-bold text-gray-900 mb-2">
         Beautiful gift, {fields.senderName.split(" ")[0]}!
       </h2>

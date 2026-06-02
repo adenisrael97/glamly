@@ -98,7 +98,7 @@ function SuccessScreen({ name }: { name: string }) {
           <span className="text-xs">⭐</span>
         </div>
       </div>
-      <span className="text-yellow-600 text-xs font-bold tracking-widest uppercase mb-2">Account Created</span>
+      <span className="text-yellow-700 text-xs font-bold tracking-widest uppercase mb-2">Account Created</span>
       <h2 className="text-2xl font-bold text-gray-900 mb-3">Welcome to the team, {name.split(" ")[0]}!</h2>
       <p className="text-gray-500 text-sm mb-8 max-w-sm">
         Your stylist account is live. Head to your studio to manage bookings and your storefront.
@@ -264,7 +264,7 @@ function StylistRegisterForm() {
   return (
     <div className="w-full max-w-lg">
       <div className="mb-2">
-        <span className="text-yellow-600 text-xs font-bold tracking-widest uppercase">Stylist Onboarding</span>
+        <span className="text-yellow-700 text-xs font-bold tracking-widest uppercase">Stylist Onboarding</span>
         <h1 className="text-2xl font-bold text-gray-900 mt-1">Join as a Glamly Stylist</h1>
         <p className="text-gray-500 text-sm mt-1">
           Already registered?{" "}

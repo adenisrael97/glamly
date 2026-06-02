@@ -159,11 +159,11 @@ export default function Footer() {
 
       {/* Divider + bottom bar */}
       <div className="border-t border-white/5">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-gray-600">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-gray-400">
           <p>© 2026 Glamly. All rights reserved.</p>
           <div className="flex items-center gap-4">
-            <Link href="#" className="hover:text-gray-400 transition-colors">Privacy Policy</Link>
-            <Link href="#" className="hover:text-gray-400 transition-colors">Terms of Service</Link>
+            <Link href="#" className="hover:text-white transition-colors">Privacy Policy</Link>
+            <Link href="#" className="hover:text-white transition-colors">Terms of Service</Link>
           </div>
         </div>
       </div>

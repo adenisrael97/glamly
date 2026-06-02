@@ -280,7 +280,7 @@ export default function LoginPage() {
             {role === "stylist" && (
               <p>
                 New stylist?{" "}
-                <Link href="/stylist-register" className="text-yellow-600 font-semibold hover:text-yellow-800 transition-colors">
+                <Link href="/stylist-register" className="text-yellow-700 font-semibold hover:text-yellow-800 transition-colors">
                   Join as a stylist →
                 </Link>
               </p>

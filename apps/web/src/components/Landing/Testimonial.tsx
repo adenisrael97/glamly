@@ -63,14 +63,14 @@ export default function Testimonial() {
                 />
               </div>
               <h3 className="text-xl font-semibold text-purple-700 mb-1">{t.name}</h3>
-              <p className="text-sm text-yellow-600 mb-3">{t.job}</p>
+              <p className="text-sm text-yellow-700 mb-3">{t.job}</p>
               <p className="text-gray-700 text-center">{t.text}</p>
             </div>
           ))}
         </div>
         <div className="flex justify-center gap-4">
           <a href="/services" className="px-6 py-3 rounded-lg bg-purple-700 text-white font-semibold shadow hover:bg-purple-800 transition">Explore Our Service</a>
-          <a href="/book" className="px-6 py-3 rounded-lg bg-yellow-400 text-purple-700 font-semibold shadow hover:bg-yellow-500 transition">Book Now</a>
+          <a href="/book-appointment" className="px-6 py-3 rounded-lg bg-yellow-400 text-purple-900 font-semibold shadow hover:bg-yellow-500 transition">Book Now</a>
         </div>
       </div>
     </section>

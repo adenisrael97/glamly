@@ -326,7 +326,7 @@ export default function RegisterPage() {
                           strength.level === 1
                             ? "text-red-500"
                             : strength.level === 2
-                              ? "text-yellow-600"
+                              ? "text-yellow-700"
                               : "text-green-600"
                         }`}
                       >
