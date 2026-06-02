@@ -11,7 +11,7 @@ const hairGenders = ["Men", "Women"];
 
 export default function Collection() {
   const [selectedCategory, setSelectedCategory] = useState("All");
-  const [selectedHairGender, setSelectedHairGender] = useState(null);
+  const [selectedHairGender, setSelectedHairGender] = useState<string | null>(null);
   const [page, setPage] = useState(1);
 
   const filteredServices = useMemo(() => {
@@ -33,13 +33,13 @@ export default function Collection() {
     page * ITEMS_PER_PAGE
   );
 
-  const handleCategoryChange = (cat) => {
+  const handleCategoryChange = (cat: string) => {
     setSelectedCategory(cat);
     setSelectedHairGender(null);
     setPage(1);
   };
 
-  const handleGenderChange = (gender) => {
+  const handleGenderChange = (gender: string) => {
     setSelectedHairGender(gender === selectedHairGender ? null : gender);
     setPage(1);
   };

@@ -9,12 +9,15 @@ export default function Hero() {
   const router = useRouter();
 
   // Handle search form submission
-  const handleSearch = (e) => {
+  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const service = e.target.service.value;
-    const location = e.target.location.value;
-    const date = e.target.date.value;
-    router.push(`/Search?service=${service}&location=${location}&date=${date}`);
+    const form = e.currentTarget;
+    const service = (form.elements.namedItem("service") as HTMLSelectElement | null)?.value ?? "";
+    const location = (form.elements.namedItem("location") as HTMLInputElement | null)?.value ?? "";
+    const date = (form.elements.namedItem("date") as HTMLInputElement | null)?.value ?? "";
+    router.push(
+      `/Search?service=${encodeURIComponent(service)}&location=${encodeURIComponent(location)}&date=${encodeURIComponent(date)}`,
+    );
   };
 
   return (

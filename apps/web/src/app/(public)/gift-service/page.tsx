@@ -16,8 +16,17 @@ const SERVICE_OPTIONS = [
   "Barber", "Bridal Package", "Home Service", "Glam Package",
 ];
 
-function validate(fields) {
-  const errors = {};
+interface GiftFields {
+  senderName: string;
+  recipientName: string;
+  phone: string;
+  service: string;
+  date: string;
+  message: string;
+}
+
+function validate(fields: GiftFields): Record<string, string> {
+  const errors: Record<string, string> = {};
   if (!fields.senderName.trim()) errors.senderName = "Your name is required";
   if (!fields.recipientName.trim()) errors.recipientName = "Recipient name is required";
   if (!fields.phone.trim()) errors.phone = "Phone number is required";
@@ -27,7 +36,7 @@ function validate(fields) {
   return errors;
 }
 
-function SuccessScreen({ fields }) {
+function SuccessScreen({ fields }: { fields: GiftFields }) {
   // Computed once per mount — Math.random() during render is impure and would
   // regenerate the gift code on every re-render.
   const [giftCode] = useState(() => `GLAM-${Math.random().toString(36).toUpperCase().slice(2, 8)}`);
@@ -109,8 +118,8 @@ function SuccessScreen({ fields }) {
 export default function GiftServicePage() {
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState({});
-  const [fields, setFields] = useState({
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [fields, setFields] = useState<GiftFields>({
     senderName: "",
     recipientName: "",
     phone: "",
@@ -121,12 +130,13 @@ export default function GiftServicePage() {
 
   const today = new Date().toISOString().split("T")[0];
 
-  const set = (key) => (e) => {
-    setFields((prev) => ({ ...prev, [key]: e.target.value }));
-    setErrors((prev) => ({ ...prev, [key]: "" }));
-  };
+  const set =
+    (key: keyof GiftFields) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      setFields((prev) => ({ ...prev, [key]: e.target.value }));
+      setErrors((prev) => ({ ...prev, [key]: "" }));
+    };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const errs = validate(fields);
     if (Object.keys(errs).length) { setErrors(errs); return; }
@@ -138,7 +148,7 @@ export default function GiftServicePage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const inputClass = (field) =>
+  const inputClass = (field: string) =>
     `w-full px-4 py-3 rounded-xl border text-sm text-gray-800 placeholder:text-gray-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent ${
       errors[field] ? "border-red-400 bg-red-50" : "border-gray-200 hover:border-purple-300 bg-white"
     }`;
