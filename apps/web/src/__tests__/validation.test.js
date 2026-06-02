@@ -7,7 +7,7 @@ import {
   passwordStrength,
   EMAIL_RE,
   PHONE_RE,
-} from "@/lib/validation";
+} from "@glamly/shared";
 
 // ── EMAIL_RE ─────────────────────────────────────────────────────────────────
 
