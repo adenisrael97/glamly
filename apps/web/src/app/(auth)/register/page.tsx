@@ -4,8 +4,10 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { validateRegister, passwordStrength } from "@glamly/shared";
 import { useAuth } from "@/context/AuthContext";
-import { validateRegister, passwordStrength } from "@/lib/validation";
+
+type Role = "user" | "stylist";
 
 const SpinnerIcon = () => (
   <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24" aria-hidden="true">
@@ -14,7 +16,7 @@ const SpinnerIcon = () => (
   </svg>
 );
 
-const EyeIcon = ({ open }) =>
+const EyeIcon = ({ open }: { open: boolean }) =>
   open ? (
     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
       <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -32,7 +34,7 @@ const CheckIcon = () => (
   </svg>
 );
 
-function SuccessScreen({ role, name }) {
+function SuccessScreen({ name }: { name: string }) {
   return (
     <div className="flex flex-col items-center text-center py-10" role="status" aria-live="polite">
       <div className="w-16 h-16 rounded-full bg-green-500 flex items-center justify-center mb-5 shadow-lg">
@@ -40,19 +42,14 @@ function SuccessScreen({ role, name }) {
       </div>
       <h2 className="text-2xl font-bold text-gray-900 mb-2">Account created!</h2>
       <p className="text-gray-500 text-sm mb-6 max-w-xs">
-        Welcome to Glamly, <strong>{name.split(" ")[0]}</strong>!{" "}
-        {role === "stylist"
-          ? "Your stylist profile is being reviewed. You'll receive an email within 24 hours."
-          : "You're all set to discover and book amazing beauty services."}
+        Welcome to Glamly, <strong>{name.split(" ")[0]}</strong>! You&apos;re all set to discover and
+        book amazing beauty services.
       </p>
       <Link
-        href={role === "stylist" ? "/stylist" : "/"}
+        href="/"
         className="px-8 py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-all duration-200 shadow-md text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-2"
       >
-        {role === "stylist" ? "View Stylist Portal" : "Explore Services"}
-      </Link>
-      <Link href="/Login" className="mt-3 text-sm text-gray-500 hover:text-gray-700 transition-colors">
-        Sign in instead →
+        Explore Services
       </Link>
     </div>
   );
@@ -60,24 +57,30 @@ function SuccessScreen({ role, name }) {
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { register, loading, error: authError, clearError } = useAuth();
+  const { register, error: authError, clearError } = useAuth();
 
-  const [role, setRole] = useState("user");
+  const [role, setRole] = useState<Role>("user");
   const [success, setSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [errors, setErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [fields, setFields] = useState({
-    name: "", email: "", password: "", confirm: "", phone: "",
+    name: "",
+    email: "",
+    password: "",
+    confirm: "",
+    phone: "",
   });
 
-  const set = (key) => (e) => {
-    setFields((prev) => ({ ...prev, [key]: e.target.value }));
-    setErrors((prev) => ({ ...prev, [key]: "" }));
-    clearError();
-  };
+  const set =
+    (key: keyof typeof fields) => (e: React.ChangeEvent<HTMLInputElement>) => {
+      setFields((prev) => ({ ...prev, [key]: e.target.value }));
+      setErrors((prev) => ({ ...prev, [key]: "" }));
+      clearError();
+    };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const errs = validateRegister(fields, role);
     if (Object.keys(errs).length) {
@@ -85,21 +88,34 @@ export default function RegisterPage() {
       return;
     }
     setErrors({});
+
+    // Stylists need a full storefront profile (specialty/location/priceFrom) the
+    // API requires — collect it on the dedicated page rather than registering a
+    // half-built account here. Password is re-entered there (never sent via URL).
+    if (role === "stylist") {
+      router.push(
+        `/stylist-register?name=${encodeURIComponent(fields.name)}&email=${encodeURIComponent(fields.email)}`,
+      );
+      return;
+    }
+
+    setSubmitting(true);
     try {
-      await register({ name: fields.name, email: fields.email, password: fields.password, role });
-      if (role === "stylist") {
-        router.push(
-          `/stylist-register?from=register&name=${encodeURIComponent(fields.name)}&email=${encodeURIComponent(fields.email)}`
-        );
-        return;
-      }
+      await register({
+        role: "user",
+        name: fields.name,
+        email: fields.email,
+        password: fields.password,
+      });
       setSuccess(true);
     } catch {
-      // error set in context
+      // error surfaced via context
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  const inputClass = (field) =>
+  const inputClass = (field: string) =>
     `w-full px-4 py-3 rounded-lg border text-sm text-gray-800 placeholder:text-gray-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent ${
       errors[field] ? "border-red-400 bg-red-50" : "border-gray-300 hover:border-purple-300"
     }`;
@@ -153,7 +169,6 @@ export default function RegisterPage() {
       {/* ── Right form panel ── */}
       <div className="flex-1 flex flex-col items-center justify-center px-6 sm:px-10 py-14 bg-white overflow-y-auto">
         <div className="w-full max-w-md">
-
           {/* Mobile logo */}
           <Link href="/" className="flex items-center gap-2.5 mb-8 lg:hidden">
             <div className="w-9 h-9 rounded-full flex items-center justify-center bg-linear-to-br from-pink-400 via-yellow-300 to-purple-400 shadow" aria-hidden="true">
@@ -174,7 +189,7 @@ export default function RegisterPage() {
           </Link>
 
           {success ? (
-            <SuccessScreen role={role} name={fields.name} />
+            <SuccessScreen name={fields.name} />
           ) : (
             <>
               <h1 className="text-2xl font-bold text-gray-900 mb-1">Create your account</h1>
@@ -186,11 +201,7 @@ export default function RegisterPage() {
               </p>
 
               {/* Role toggle */}
-              <div
-                className="flex bg-gray-100 rounded-xl p-1 mb-6 gap-1"
-                role="group"
-                aria-label="Select account type"
-              >
+              <div className="flex bg-gray-100 rounded-xl p-1 mb-6 gap-1" role="group" aria-label="Select account type">
                 {[
                   { key: "user", label: "Customer" },
                   { key: "stylist", label: "Stylist" },
@@ -198,12 +209,10 @@ export default function RegisterPage() {
                   <button
                     key={key}
                     type="button"
-                    onClick={() => setRole(key)}
+                    onClick={() => setRole(key as Role)}
                     aria-pressed={role === key}
                     className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
-                      role === key
-                        ? "bg-white text-purple-700 shadow-sm"
-                        : "text-gray-500 hover:text-gray-700"
+                      role === key ? "bg-white text-purple-700 shadow-sm" : "text-gray-500 hover:text-gray-700"
                     }`}
                   >
                     {label}
@@ -213,7 +222,8 @@ export default function RegisterPage() {
 
               {role === "stylist" && (
                 <div className="mb-5 px-4 py-3 rounded-lg bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm" role="note">
-                  <strong>Stylist registration:</strong> After this step you&apos;ll complete your stylist profile with services, location, and bio.
+                  <strong>Stylist registration:</strong> Next you&apos;ll complete your stylist profile
+                  with services, location, and bio.
                 </div>
               )}
 
@@ -272,28 +282,6 @@ export default function RegisterPage() {
                   {errors.email && <p id="reg-email-error" className="text-xs text-red-500" role="alert">{errors.email}</p>}
                 </div>
 
-                {/* Phone — stylist only */}
-                {role === "stylist" && (
-                  <div className="flex flex-col gap-1">
-                    <label htmlFor="reg-phone" className="text-sm font-medium text-gray-700">
-                      Phone number <span className="text-red-500" aria-hidden="true">*</span>
-                    </label>
-                    <input
-                      id="reg-phone"
-                      type="tel"
-                      value={fields.phone}
-                      onChange={set("phone")}
-                      placeholder="+234 800 000 0000"
-                      autoComplete="tel"
-                      aria-required="true"
-                      aria-invalid={!!errors.phone}
-                      aria-describedby={errors.phone ? "reg-phone-error" : undefined}
-                      className={inputClass("phone")}
-                    />
-                    {errors.phone && <p id="reg-phone-error" className="text-xs text-red-500" role="alert">{errors.phone}</p>}
-                  </div>
-                )}
-
                 {/* Password */}
                 <div className="flex flex-col gap-1">
                   <label htmlFor="reg-password" className="text-sm font-medium text-gray-700">
@@ -305,7 +293,7 @@ export default function RegisterPage() {
                       type={showPassword ? "text" : "password"}
                       value={fields.password}
                       onChange={set("password")}
-                      placeholder="Min. 8 characters"
+                      placeholder="Min. 8 characters, mixed case + a number"
                       autoComplete="new-password"
                       aria-required="true"
                       aria-invalid={!!errors.password}
@@ -322,11 +310,7 @@ export default function RegisterPage() {
                     </button>
                   </div>
                   {fields.password && strength && (
-                    <div
-                      id="reg-password-strength"
-                      className="flex items-center gap-2 mt-1"
-                      aria-label={`Password strength: ${strength.label}`}
-                    >
+                    <div id="reg-password-strength" className="flex items-center gap-2 mt-1" aria-label={`Password strength: ${strength.label}`}>
                       <div className="flex gap-1 flex-1" aria-hidden="true">
                         {[1, 2, 3].map((l) => (
                           <div
@@ -337,10 +321,15 @@ export default function RegisterPage() {
                           />
                         ))}
                       </div>
-                      <span className={`text-xs font-medium ${
-                        strength.level === 1 ? "text-red-500" :
-                        strength.level === 2 ? "text-yellow-600" : "text-green-600"
-                      }`}>
+                      <span
+                        className={`text-xs font-medium ${
+                          strength.level === 1
+                            ? "text-red-500"
+                            : strength.level === 2
+                              ? "text-yellow-600"
+                              : "text-green-600"
+                        }`}
+                      >
                         {strength.label}
                       </span>
                     </div>
@@ -381,24 +370,19 @@ export default function RegisterPage() {
                 {/* Terms */}
                 <p className="text-xs text-gray-400 mt-1">
                   By creating an account, you agree to Glamly&apos;s{" "}
-                  <Link href="#" className="text-purple-600 hover:underline">Terms of Service</Link>{" "}
-                  and{" "}
+                  <Link href="#" className="text-purple-600 hover:underline">Terms of Service</Link> and{" "}
                   <Link href="#" className="text-purple-600 hover:underline">Privacy Policy</Link>.
                 </p>
 
                 {/* Submit */}
                 <button
                   type="submit"
-                  disabled={loading}
-                  aria-busy={loading}
+                  disabled={submitting}
+                  aria-busy={submitting}
                   className="w-full py-3 mt-1 bg-purple-600 hover:bg-purple-700 active:bg-purple-800 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-all duration-200 flex items-center justify-center gap-2 text-sm shadow-md hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-2"
                 >
-                  {loading && <SpinnerIcon />}
-                  {loading
-                    ? "Creating account…"
-                    : role === "stylist"
-                    ? "Continue as Stylist →"
-                    : "Create free account"}
+                  {submitting && <SpinnerIcon />}
+                  {submitting ? "Creating account…" : role === "stylist" ? "Continue as Stylist →" : "Create free account"}
                 </button>
               </form>
             </>

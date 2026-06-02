@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense, type ChangeEvent, type FormEvent } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useSearchParams } from "next/navigation";
-import { Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 
 const SpinnerIcon = () => (
   <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
@@ -20,18 +20,33 @@ const CheckIcon = () => (
 );
 
 const SERVICE_OPTIONS = [
-  "Hair Styling", "Braiding", "Barber", "Makeup", "Nails",
-  "Lashes", "Home Service", "Bridal", "Natural Hair",
+  "Hair Styling",
+  "Braiding",
+  "Barber",
+  "Makeup",
+  "Nails",
+  "Lashes",
+  "Home Service",
+  "Bridal",
+  "Natural Hair",
 ];
 
 const LOCATION_OPTIONS = [
-  "Lekki", "Victoria Island", "Ikeja", "Yaba", "Surulere",
-  "Ajah", "Ikoyi", "Festac", "Maryland", "Other",
+  "Lekki",
+  "Victoria Island",
+  "Ikeja",
+  "Yaba",
+  "Surulere",
+  "Ajah",
+  "Ikoyi",
+  "Festac",
+  "Maryland",
+  "Other",
 ];
 
 const STEP_LABELS = ["Personal Info", "Services", "Portfolio", "Review"];
 
-function StepIndicator({ current, total }) {
+function StepIndicator({ current, total }: { current: number; total: number }) {
   return (
     <div className="flex items-center justify-center gap-0 mb-8">
       {Array.from({ length: total }).map((_, i) => {
@@ -40,19 +55,23 @@ function StepIndicator({ current, total }) {
         const active = step === current;
         return (
           <div key={step} className="flex items-center">
-            <div className={`flex flex-col items-center gap-1`}>
+            <div className="flex flex-col items-center gap-1">
               <div
                 className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 ${
                   done
                     ? "bg-green-500 text-white"
                     : active
-                    ? "bg-purple-600 text-white shadow-lg shadow-purple-200"
-                    : "bg-gray-200 text-gray-400"
+                      ? "bg-purple-600 text-white shadow-lg shadow-purple-200"
+                      : "bg-gray-200 text-gray-400"
                 }`}
               >
                 {done ? <CheckIcon /> : step}
               </div>
-              <span className={`text-xs font-medium hidden sm:block ${active ? "text-purple-700" : done ? "text-green-600" : "text-gray-400"}`}>
+              <span
+                className={`text-xs font-medium hidden sm:block ${
+                  active ? "text-purple-700" : done ? "text-green-600" : "text-gray-400"
+                }`}
+              >
                 {STEP_LABELS[i]}
               </span>
             </div>
@@ -66,7 +85,7 @@ function StepIndicator({ current, total }) {
   );
 }
 
-function SuccessScreen({ name }) {
+function SuccessScreen({ name }: { name: string }) {
   return (
     <div className="flex flex-col items-center text-center py-8 px-4">
       <div className="relative mb-6">
@@ -79,59 +98,75 @@ function SuccessScreen({ name }) {
           <span className="text-xs">⭐</span>
         </div>
       </div>
-      <span className="text-yellow-600 text-xs font-bold tracking-widest uppercase mb-2">Application Submitted</span>
-      <h2 className="text-2xl font-bold text-gray-900 mb-3">
-        Welcome to the team, {name.split(" ")[0]}!
-      </h2>
-      <p className="text-gray-500 text-sm mb-2 max-w-sm">
-        Your stylist application has been received. Our team will review your profile and get back to you within <strong>24–48 hours</strong>.
-      </p>
-      <p className="text-gray-400 text-xs mb-8 max-w-xs">
-        Check your email for a confirmation. Once approved, your profile will be live on GlamHub.
+      <span className="text-yellow-600 text-xs font-bold tracking-widest uppercase mb-2">Account Created</span>
+      <h2 className="text-2xl font-bold text-gray-900 mb-3">Welcome to the team, {name.split(" ")[0]}!</h2>
+      <p className="text-gray-500 text-sm mb-8 max-w-sm">
+        Your stylist account is live. Head to your studio to manage bookings and your storefront.
       </p>
       <div className="flex flex-col sm:flex-row gap-3 w-full max-w-xs">
         <Link
-          href="/"
+          href="/studio"
           className="flex-1 px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-all duration-200 text-sm text-center shadow-md"
         >
-          Go to Homepage
+          Go to your studio
         </Link>
         <Link
-          href="/Login"
+          href="/"
           className="flex-1 px-6 py-3 border border-gray-300 hover:border-purple-400 text-gray-700 font-semibold rounded-lg transition-all duration-200 text-sm text-center"
         >
-          Sign In
+          Homepage
         </Link>
       </div>
     </div>
   );
 }
 
+type FieldKey =
+  | "name"
+  | "email"
+  | "password"
+  | "phone"
+  | "location"
+  | "specialty"
+  | "priceFrom"
+  | "experience"
+  | "bio"
+  | "instagram"
+  | "portfolio";
+
 function StylistRegisterForm() {
   const params = useSearchParams();
+  const router = useRouter();
+  const { register, error: authError, clearError } = useAuth();
+
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const [fields, setFields] = useState({
-    name: params.get("name") || "",
-    email: params.get("email") || "",
+    name: params.get("name") ?? "",
+    email: params.get("email") ?? "",
+    password: "",
     phone: "",
     location: "",
+    priceFrom: "",
     experience: "",
     bio: "",
-    services: [],
+    services: [] as string[],
     instagram: "",
     portfolio: "",
   });
 
-  const set = (key) => (e) => {
-    setFields((prev) => ({ ...prev, [key]: e.target.value }));
-    setErrors((prev) => ({ ...prev, [key]: "" }));
-  };
+  const set =
+    (key: FieldKey) =>
+    (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+      setFields((prev) => ({ ...prev, [key]: e.target.value }));
+      setErrors((prev) => ({ ...prev, [key]: "" }));
+      clearError();
+    };
 
-  const toggleService = (svc) => {
+  const toggleService = (svc: string) => {
     setFields((prev) => ({
       ...prev,
       services: prev.services.includes(svc)
@@ -141,47 +176,85 @@ function StylistRegisterForm() {
     setErrors((prev) => ({ ...prev, services: "" }));
   };
 
-  const validateStep = (s) => {
-    const errs = {};
+  const validateStep = (s: number): Record<string, string> => {
+    const errs: Record<string, string> = {};
     if (s === 1) {
       if (!fields.name.trim()) errs.name = "Full name is required";
       if (!fields.email.trim()) errs.email = "Email is required";
       else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fields.email)) errs.email = "Enter a valid email";
+      if (!fields.password) errs.password = "Password is required";
+      else if (
+        fields.password.length < 8 ||
+        !/[a-z]/.test(fields.password) ||
+        !/[A-Z]/.test(fields.password) ||
+        !/[0-9]/.test(fields.password)
+      )
+        errs.password = "Min 8 chars with upper, lower & a number";
       if (!fields.phone.trim()) errs.phone = "Phone number is required";
       if (!fields.location) errs.location = "Please select a location";
     }
     if (s === 2) {
       if (fields.services.length === 0) errs.services = "Select at least one service";
       if (!fields.experience) errs.experience = "Years of experience is required";
+      if (!fields.priceFrom || Number(fields.priceFrom) <= 0)
+        errs.priceFrom = "Enter your starting price";
     }
     if (s === 3) {
-      if (!fields.bio.trim() || fields.bio.length < 30)
-        errs.bio = "Bio must be at least 30 characters";
+      if (!fields.bio.trim() || fields.bio.length < 30) errs.bio = "Bio must be at least 30 characters";
     }
     return errs;
   };
 
   const next = () => {
     const errs = validateStep(step);
-    if (Object.keys(errs).length) { setErrors(errs); return; }
+    if (Object.keys(errs).length) {
+      setErrors(errs);
+      return;
+    }
     setErrors({});
     setStep((s) => s + 1);
   };
 
   const back = () => setStep((s) => Math.max(1, s - 1));
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const errs = validateStep(step);
-    if (Object.keys(errs).length) { setErrors(errs); return; }
+    // Re-validate every step before the real submission.
+    for (const s of [1, 2, 3]) {
+      const errs = validateStep(s);
+      if (Object.keys(errs).length) {
+        setErrors(errs);
+        setStep(s);
+        return;
+      }
+    }
     setErrors({});
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 2000));
-    setLoading(false);
-    setSuccess(true);
+    try {
+      // The register endpoint persists the storefront essentials; the primary
+      // selected service becomes the specialty. Bio / experience / portfolio are
+      // collected for UX but have no profile-update endpoint yet (read-only gap).
+      await register({
+        role: "stylist",
+        name: fields.name,
+        email: fields.email,
+        password: fields.password,
+        phone: fields.phone,
+        specialty: fields.services[0] ?? "Beauty",
+        location: fields.location,
+        priceFrom: Number(fields.priceFrom),
+      });
+      setSuccess(true);
+      router.push("/studio");
+    } catch {
+      // error surfaced via context; jump back to the review step to show it
+      setStep(4);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const inputClass = (field) =>
+  const inputClass = (field: string) =>
     `w-full px-4 py-3 rounded-lg border text-sm text-gray-800 placeholder:text-gray-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent ${
       errors[field] ? "border-red-400 bg-red-50" : "border-gray-300 hover:border-purple-300"
     }`;
@@ -190,26 +263,9 @@ function StylistRegisterForm() {
 
   return (
     <div className="w-full max-w-lg">
-      {/* Mobile logo */}
-      <Link href="/" className="flex items-center gap-2.5 mb-8 lg:hidden">
-        <div className="w-9 h-9 rounded-full flex items-center justify-center bg-gradient-to-br from-pink-400 via-yellow-300 to-purple-400 shadow">
-          <svg width="24" height="24" viewBox="0 0 32 32" fill="none">
-            <circle cx="16" cy="16" r="16" fill="url(#srm)" />
-            <path d="M16 8c2.5 0 4.5 2 4.5 4.5S18.5 17 16 17s-4.5-2-4.5-4.5S13.5 8 16 8z" fill="#fff" />
-            <ellipse cx="16" cy="22" rx="7" ry="3" fill="#fff" opacity="0.7" />
-            <defs>
-              <linearGradient id="srm" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
-                <stop stopColor="#F472B6" /><stop offset="0.5" stopColor="#FDE68A" /><stop offset="1" stopColor="#A78BFA" />
-              </linearGradient>
-            </defs>
-          </svg>
-        </div>
-        <span className="text-lg font-bold text-gray-900">GlamHub</span>
-      </Link>
-
       <div className="mb-2">
         <span className="text-yellow-600 text-xs font-bold tracking-widest uppercase">Stylist Onboarding</span>
-        <h1 className="text-2xl font-bold text-gray-900 mt-1">Join as a GlamHub Stylist</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mt-1">Join as a Glamly Stylist</h1>
         <p className="text-gray-500 text-sm mt-1">
           Already registered?{" "}
           <Link href="/Login" className="text-purple-600 font-semibold hover:text-purple-800">Sign in</Link>
@@ -234,6 +290,18 @@ function StylistRegisterForm() {
               {errors.email && <p className="text-xs text-red-500">{errors.email}</p>}
             </div>
             <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-gray-700">Password <span className="text-red-500">*</span></label>
+              <input
+                type="password"
+                value={fields.password}
+                onChange={set("password")}
+                placeholder="Min 8 chars, mixed case + a number"
+                autoComplete="new-password"
+                className={inputClass("password")}
+              />
+              {errors.password && <p className="text-xs text-red-500">{errors.password}</p>}
+            </div>
+            <div className="flex flex-col gap-1">
               <label className="text-sm font-medium text-gray-700">Phone number <span className="text-red-500">*</span></label>
               <input type="tel" value={fields.phone} onChange={set("phone")} placeholder="+234 800 000 0000" className={inputClass("phone")} />
               {errors.phone && <p className="text-xs text-red-500">{errors.phone}</p>}
@@ -256,10 +324,8 @@ function StylistRegisterForm() {
           <div className="flex flex-col gap-4">
             <h2 className="text-base font-semibold text-gray-700 mb-1">Services & Experience</h2>
             <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium text-gray-700">
-                Services offered <span className="text-red-500">*</span>
-              </label>
-              <p className="text-xs text-gray-400">Select all that apply</p>
+              <label className="text-sm font-medium text-gray-700">Services offered <span className="text-red-500">*</span></label>
+              <p className="text-xs text-gray-400">Your first selection becomes your headline specialty.</p>
               <div className="flex flex-wrap gap-2">
                 {SERVICE_OPTIONS.map((svc) => {
                   const selected = fields.services.includes(svc);
@@ -284,6 +350,19 @@ function StylistRegisterForm() {
             </div>
 
             <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-gray-700">Starting price (₦) <span className="text-red-500">*</span></label>
+              <input
+                type="number"
+                min={0}
+                value={fields.priceFrom}
+                onChange={set("priceFrom")}
+                placeholder="e.g. 8000"
+                className={inputClass("priceFrom")}
+              />
+              {errors.priceFrom && <p className="text-xs text-red-500">{errors.priceFrom}</p>}
+            </div>
+
+            <div className="flex flex-col gap-1">
               <label className="text-sm font-medium text-gray-700">Years of experience <span className="text-red-500">*</span></label>
               <select value={fields.experience} onChange={set("experience")} className={inputClass("experience")}>
                 <option value="">Select experience level</option>
@@ -303,9 +382,7 @@ function StylistRegisterForm() {
           <div className="flex flex-col gap-4">
             <h2 className="text-base font-semibold text-gray-700 mb-1">Portfolio & Bio</h2>
             <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium text-gray-700">
-                Bio <span className="text-red-500">*</span>
-              </label>
+              <label className="text-sm font-medium text-gray-700">Bio <span className="text-red-500">*</span></label>
               <p className="text-xs text-gray-400">Tell clients about yourself, your style, and what makes you special.</p>
               <textarea
                 value={fields.bio}
@@ -315,11 +392,7 @@ function StylistRegisterForm() {
                 className={`${inputClass("bio")} resize-none`}
               />
               <div className="flex justify-between">
-                {errors.bio ? (
-                  <p className="text-xs text-red-500">{errors.bio}</p>
-                ) : (
-                  <span />
-                )}
+                {errors.bio ? <p className="text-xs text-red-500">{errors.bio}</p> : <span />}
                 <span className={`text-xs ${fields.bio.length < 30 ? "text-red-400" : "text-gray-400"}`}>
                   {fields.bio.length}/30 min
                 </span>
@@ -329,24 +402,12 @@ function StylistRegisterForm() {
               <label className="text-sm font-medium text-gray-700">Instagram handle (optional)</label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">@</span>
-                <input
-                  type="text"
-                  value={fields.instagram}
-                  onChange={set("instagram")}
-                  placeholder="yourusername"
-                  className={`${inputClass("instagram")} pl-8`}
-                />
+                <input type="text" value={fields.instagram} onChange={set("instagram")} placeholder="yourusername" className={`${inputClass("instagram")} pl-8`} />
               </div>
             </div>
             <div className="flex flex-col gap-1">
               <label className="text-sm font-medium text-gray-700">Portfolio link (optional)</label>
-              <input
-                type="url"
-                value={fields.portfolio}
-                onChange={set("portfolio")}
-                placeholder="https://yourportfolio.com"
-                className={inputClass("portfolio")}
-              />
+              <input type="url" value={fields.portfolio} onChange={set("portfolio")} placeholder="https://yourportfolio.com" className={inputClass("portfolio")} />
             </div>
           </div>
         )}
@@ -354,13 +415,19 @@ function StylistRegisterForm() {
         {/* ── STEP 4: Review ── */}
         {step === 4 && (
           <div className="flex flex-col gap-4">
-            <h2 className="text-base font-semibold text-gray-700 mb-1">Review your application</h2>
+            <h2 className="text-base font-semibold text-gray-700 mb-1">Review your details</h2>
+            {authError && (
+              <div role="alert" className="px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
+                {authError}
+              </div>
+            )}
             <div className="bg-gray-50 rounded-xl border border-gray-200 divide-y divide-gray-200">
               {[
                 { label: "Name", value: fields.name },
                 { label: "Email", value: fields.email },
                 { label: "Phone", value: fields.phone },
                 { label: "Location", value: fields.location },
+                { label: "Starting price", value: fields.priceFrom ? `₦${Number(fields.priceFrom).toLocaleString()}` : "—" },
                 { label: "Experience", value: fields.experience ? `${fields.experience} years` : "—" },
                 { label: "Services", value: fields.services.join(", ") || "—" },
               ].map(({ label, value }) => (
@@ -386,20 +453,12 @@ function StylistRegisterForm() {
         {/* ── Navigation ── */}
         <div className="flex items-center gap-3 mt-8">
           {step > 1 && (
-            <button
-              type="button"
-              onClick={back}
-              className="flex-1 py-3 border border-gray-300 hover:border-purple-400 text-gray-700 font-semibold rounded-lg transition-all duration-200 text-sm"
-            >
+            <button type="button" onClick={back} className="flex-1 py-3 border border-gray-300 hover:border-purple-400 text-gray-700 font-semibold rounded-lg transition-all duration-200 text-sm">
               ← Back
             </button>
           )}
           {step < 4 ? (
-            <button
-              type="button"
-              onClick={next}
-              className="flex-1 py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-all duration-200 text-sm shadow-md"
-            >
+            <button type="button" onClick={next} className="flex-1 py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-all duration-200 text-sm shadow-md">
               Next →
             </button>
           ) : (
@@ -409,7 +468,7 @@ function StylistRegisterForm() {
               className="flex-1 py-3 bg-purple-600 hover:bg-purple-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-all duration-200 flex items-center justify-center gap-2 text-sm shadow-md"
             >
               {loading && <SpinnerIcon />}
-              {loading ? "Submitting application…" : "Submit Application ✨"}
+              {loading ? "Creating account…" : "Create stylist account ✨"}
             </button>
           )}
         </div>
@@ -433,7 +492,9 @@ export default function StylistRegisterPage() {
               <ellipse cx="16" cy="22" rx="7" ry="3" fill="#fff" opacity="0.7" />
               <defs>
                 <linearGradient id="srg" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
-                  <stop stopColor="#F472B6" /><stop offset="0.5" stopColor="#FDE68A" /><stop offset="1" stopColor="#A78BFA" />
+                  <stop stopColor="#F472B6" />
+                  <stop offset="0.5" stopColor="#FDE68A" />
+                  <stop offset="1" stopColor="#A78BFA" />
                 </linearGradient>
               </defs>
             </svg>
@@ -443,7 +504,7 @@ export default function StylistRegisterPage() {
             Grow your<br />beauty business
           </h2>
           <p className="text-purple-200 text-sm leading-relaxed mb-8">
-            Join 500+ professional stylists on GlamHub. Set your own hours, grow your clientele, and earn more.
+            Join 500+ professional stylists on Glamly. Set your own hours, grow your clientele, and earn more.
           </p>
           <div className="flex flex-col gap-4 w-full">
             {[
@@ -453,9 +514,7 @@ export default function StylistRegisterPage() {
               { icon: "🛡️", title: "Secure payments", desc: "Get paid instantly" },
             ].map(({ icon, title, desc }) => (
               <div key={title} className="flex items-center gap-3 text-left">
-                <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center text-xl shrink-0">
-                  {icon}
-                </div>
+                <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center text-xl shrink-0">{icon}</div>
                 <div>
                   <div className="text-white font-semibold text-sm">{title}</div>
                   <div className="text-purple-300 text-xs">{desc}</div>
