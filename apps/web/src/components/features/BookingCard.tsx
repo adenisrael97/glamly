@@ -37,9 +37,13 @@ export default function BookingCard({ booking, perspective = "customer", actions
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="font-semibold text-gray-900 truncate">{booking.service.name}</h3>
+          <h3 className="font-semibold text-gray-900 truncate">
+            {booking.service?.name ?? booking.services?.[0]?.service?.name ?? "Multiple services"}
+          </h3>
           <p className="text-sm text-gray-500 mt-0.5">
-            {perspective === "customer" ? `with ${booking.stylist.user.name}` : booking.service.category}
+            {perspective === "customer"
+              ? `with ${booking.stylist.user.name}`
+              : (booking.service?.category ?? booking.services?.[0]?.service?.category ?? "Service")}
             {" · "}
             {booking.stylist.location}
           </p>

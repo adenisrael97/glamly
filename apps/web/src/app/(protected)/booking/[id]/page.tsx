@@ -207,7 +207,9 @@ export default function BookingDetailPage() {
           <div className="bg-linear-to-r from-purple-900 to-purple-700 text-white p-6">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <h1 className="text-xl font-extrabold">{booking.service.name}</h1>
+                <h1 className="text-xl font-extrabold">
+                  {booking.service?.name ?? "Multiple services"}
+                </h1>
                 <p className="text-purple-200 text-sm mt-0.5">with {booking.stylist.user.name}</p>
               </div>
               <span className={`text-xs font-semibold px-3 py-1.5 rounded-full border ${statusStyle.cls}`}>
@@ -220,7 +222,7 @@ export default function BookingDetailPage() {
             {[
               { label: "When", value: formatWhen(booking.startTime) },
               { label: "Location", value: booking.stylist.location },
-              { label: "Category", value: booking.service.category },
+              { label: "Category", value: booking.service?.category ?? "Multiple" },
               { label: "Amount", value: `₦${booking.totalAmount.toLocaleString()}` },
             ].map(({ label, value }) => (
               <div key={label} className="flex items-center justify-between py-3">

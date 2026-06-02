@@ -9,6 +9,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 const PROTECTED_PREFIXES = ["/book-appointment", "/booking", "/dashboard"];
 const STYLIST_PREFIXES = ["/studio"];
+const ADMIN_PREFIXES = ["/admin"];
 const AUTH_PREFIXES = ["/Login", "/register", "/stylist-register"];
 
 function matches(pathname: string, prefixes: string[]): boolean {
@@ -20,11 +21,25 @@ export function middleware(req: NextRequest): NextResponse {
   const role = req.cookies.get("glamly_role")?.value;
   const isAuthed = Boolean(role);
   const isStylist = role === "stylist";
+  const isAdmin = role === "admin";
 
   // Signed-in users have no business on the auth pages.
   if (matches(pathname, AUTH_PREFIXES)) {
     if (isAuthed) {
-      return NextResponse.redirect(new URL(isStylist ? "/studio" : "/", req.url));
+      return NextResponse.redirect(new URL(isStylist ? "/studio" : isAdmin ? "/admin/dashboard" : "/", req.url));
+    }
+    return NextResponse.next();
+  }
+
+  // Admin-only routes.
+  if (matches(pathname, ADMIN_PREFIXES)) {
+    if (!isAuthed) {
+      const url = new URL("/Login", req.url);
+      url.searchParams.set("next", pathname);
+      return NextResponse.redirect(url);
+    }
+    if (!isAdmin) {
+      return NextResponse.redirect(new URL("/", req.url));
     }
     return NextResponse.next();
   }

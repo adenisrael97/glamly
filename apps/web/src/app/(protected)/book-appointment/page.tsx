@@ -177,7 +177,7 @@ function BookFlow({ stylistId, initialServiceId }: { stylistId: string; initialS
     try {
       const booking = await bookingsApi.create({
         stylistId,
-        serviceId,
+        serviceIds: [serviceId],
         startTime: slot.startTime,
         notes: notes.trim() || undefined,
         idempotencyKey,
