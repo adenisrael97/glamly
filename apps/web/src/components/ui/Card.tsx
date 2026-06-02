@@ -1,4 +1,15 @@
 import Image from "next/image";
+import type { ReactNode } from "react";
+
+export interface CardProps {
+  title?: string;
+  description?: string;
+  image?: string;
+  imageAlt?: string;
+  imageHeight?: number;
+  children?: ReactNode;
+  className?: string;
+}
 
 export default function Card({
   title,
@@ -8,7 +19,7 @@ export default function Card({
   imageHeight = 192,
   children,
   className = "",
-}) {
+}: CardProps) {
   return (
     <div
       className={[
@@ -30,13 +41,9 @@ export default function Card({
       )}
       {(title || description || children) && (
         <div className="p-5">
-          {title && (
-            <h3 className="font-semibold text-lg text-gray-900 mb-2">{title}</h3>
-          )}
+          {title && <h3 className="font-semibold text-lg text-gray-900 mb-2">{title}</h3>}
           {description && (
-            <p className="text-gray-600 text-sm leading-relaxed mb-4">
-              {description}
-            </p>
+            <p className="text-gray-600 text-sm leading-relaxed mb-4">{description}</p>
           )}
           {children}
         </div>

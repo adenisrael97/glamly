@@ -1,4 +1,4 @@
-export function Skeleton({ className = "" }) {
+export function Skeleton({ className = "" }: { className?: string }) {
   return (
     <div
       className={`relative overflow-hidden bg-gray-200 rounded-lg before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_1.5s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/60 before:to-transparent ${className}`}
@@ -39,7 +39,7 @@ export function StylistCardSkeleton() {
   );
 }
 
-export function FormSkeleton({ rows = 4 }) {
+export function FormSkeleton({ rows = 4 }: { rows?: number }) {
   return (
     <div className="flex flex-col gap-4 w-full">
       {Array.from({ length: rows }).map((_, i) => (

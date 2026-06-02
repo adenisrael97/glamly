@@ -1,6 +1,3 @@
-
-
-
 "use client";
 
 import { useState, useEffect, useRef } from "react";
@@ -35,8 +32,8 @@ export default function Navbar() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [service, setService] = useState("");
   const [location, setLocation] = useState("");
-  const dropdownRef = useRef(null);
-  const userMenuRef = useRef(null);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
+  const userMenuRef = useRef<HTMLDivElement | null>(null);
 
   // Scroll effect
   useEffect(() => {
@@ -47,11 +44,12 @@ export default function Navbar() {
 
   // Close dropdowns if clicked outside
   useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (dropdownRef.current && !dropdownRef.current.contains(target)) {
         setSearchOpen(false);
       }
-      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
+      if (userMenuRef.current && !userMenuRef.current.contains(target)) {
         setUserMenuOpen(false);
       }
     };
@@ -59,15 +57,22 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const isActive = (path) => pathname === path;
+  const isActive = (path: string) => pathname === path;
 
   const handleSearch = () => {
     if (!service && !location) return;
     router.push(
-      `/Search?service=${encodeURIComponent(service)}&location=${encodeURIComponent(location)}`
+      `/Search?service=${encodeURIComponent(service)}&location=${encodeURIComponent(location)}`,
     );
     setSearchOpen(false);
     setIsOpen(false);
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    setUserMenuOpen(false);
+    setIsOpen(false);
+    router.push("/");
   };
 
   const navbarBg = scrolled ? "rgba(0,0,0,0.95)" : "rgba(44, 20, 63, 0.85)";
@@ -102,9 +107,7 @@ export default function Navbar() {
         className="sticky top-0 z-50 w-full transition-all duration-300"
         style={{
           background: navbarBg,
-          boxShadow: scrolled
-            ? "0 2px 16px 0 rgba(44,20,63,0.12)"
-            : "none",
+          boxShadow: scrolled ? "0 2px 16px 0 rgba(44,20,63,0.12)" : "none",
           backdropFilter: scrolled ? "blur(4px)" : "blur(0px)",
         }}
       >
@@ -113,26 +116,13 @@ export default function Navbar() {
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2 sm:gap-3 group">
               <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center shadow-lg bg-linear-to-br from-pink-400 via-yellow-300 to-purple-400">
-                <svg
-                  width="32"
-                  height="32"
-                  viewBox="0 0 32 32"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
+                <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <circle cx="16" cy="16" r="16" fill="url(#glamGradient)" />
                   <path
                     d="M16 8c2.5 0 4.5 2 4.5 4.5S18.5 17 16 17s-4.5-2-4.5-4.5S13.5 8 16 8z"
                     fill="#fff"
                   />
-                  <ellipse
-                    cx="16"
-                    cy="22"
-                    rx="7"
-                    ry="3"
-                    fill="#fff"
-                    opacity="0.7"
-                  />
+                  <ellipse cx="16" cy="22" rx="7" ry="3" fill="#fff" opacity="0.7" />
                   <defs>
                     <linearGradient
                       id="glamGradient"
@@ -162,10 +152,7 @@ export default function Navbar() {
             {/* Desktop nav links */}
             <ul className="hidden lg:flex items-center gap-2">
               {navLinks.map((link) => (
-                <li
-                  key={link.href}
-                  className={link.name === "Search" ? "relative" : ""}
-                >
+                <li key={link.href} className={link.name === "Search" ? "relative" : ""}>
                   {link.name === "Search" ? (
                     <>
                       <button
@@ -178,9 +165,7 @@ export default function Navbar() {
                       >
                         {link.name}{" "}
                         <HiChevronDown
-                          className={`transition-transform ${
-                            searchOpen ? "rotate-180" : "rotate-0"
-                          }`}
+                          className={`transition-transform ${searchOpen ? "rotate-180" : "rotate-0"}`}
                         />
                       </button>
                       <AnimatePresence>
@@ -270,10 +255,14 @@ export default function Navbar() {
                       className="flex items-center gap-2 pl-1 pr-3 py-1 rounded-full border border-white/20 hover:border-white/50 transition-all bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
                     >
                       <div className="w-8 h-8 rounded-full bg-linear-to-br from-pink-400 via-yellow-300 to-purple-400 flex items-center justify-center text-white text-xs font-bold shrink-0">
-                        {user.name[0].toUpperCase()}
+                        {user.name[0]?.toUpperCase()}
                       </div>
-                      <span className="text-sm text-white font-medium max-w-[100px] truncate">{user.name.split(" ")[0]}</span>
-                      <HiChevronDown className={`text-white/70 transition-transform ${userMenuOpen ? "rotate-180" : ""}`} />
+                      <span className="text-sm text-white font-medium max-w-[100px] truncate">
+                        {user.name.split(" ")[0]}
+                      </span>
+                      <HiChevronDown
+                        className={`text-white/70 transition-transform ${userMenuOpen ? "rotate-180" : ""}`}
+                      />
                     </button>
                     <AnimatePresence>
                       {userMenuOpen && (
@@ -288,27 +277,33 @@ export default function Navbar() {
                           <div className="px-4 py-3 border-b border-gray-100">
                             <p className="text-sm font-semibold text-gray-900 truncate">{user.name}</p>
                             <p className="text-xs text-gray-400 truncate">{user.email}</p>
-                            <span className="mt-1 inline-block text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium capitalize">{user.role}</span>
+                            <span className="mt-1 inline-block text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium capitalize">
+                              {user.role}
+                            </span>
                           </div>
                           <div className="py-1">
                             <Link
-                              href="/"
+                              href={user.role === "stylist" ? "/studio" : "/dashboard"}
                               role="menuitem"
                               onClick={() => setUserMenuOpen(false)}
                               className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                             >
-                              <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+                              <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                              </svg>
                               Dashboard
                             </Link>
                             {user.role === "stylist" && (
                               <Link
-                                href="/stylist"
+                                href="/studio"
                                 role="menuitem"
                                 onClick={() => setUserMenuOpen(false)}
                                 className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                               >
-                                <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                                My Profile
+                                <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                                My Studio
                               </Link>
                             )}
                           </div>
@@ -316,10 +311,12 @@ export default function Navbar() {
                             <button
                               type="button"
                               role="menuitem"
-                              onClick={() => { logout(); setUserMenuOpen(false); router.push("/"); }}
+                              onClick={handleLogout}
                               className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
                             >
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                              </svg>
                               Sign out
                             </button>
                           </div>
@@ -400,19 +397,28 @@ export default function Navbar() {
                     <div className="flex flex-col gap-2">
                       <div className="flex items-center gap-3 px-2 py-2">
                         <div className="w-9 h-9 rounded-full bg-linear-to-br from-pink-400 via-yellow-300 to-purple-400 flex items-center justify-center text-white text-sm font-bold shrink-0">
-                          {user.name[0].toUpperCase()}
+                          {user.name[0]?.toUpperCase()}
                         </div>
                         <div className="min-w-0">
                           <p className="text-sm font-semibold text-gray-900 truncate">{user.name}</p>
                           <p className="text-xs text-gray-500 truncate">{user.email}</p>
                         </div>
                       </div>
+                      <Link
+                        href={user.role === "stylist" ? "/studio" : "/dashboard"}
+                        onClick={() => setIsOpen(false)}
+                        className="block px-4 py-2.5 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-200 transition-colors"
+                      >
+                        Dashboard
+                      </Link>
                       <button
                         type="button"
-                        onClick={() => { logout(); setIsOpen(false); router.push("/"); }}
+                        onClick={handleLogout}
                         className="w-full flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
                       >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
                         Sign out
                       </button>
                     </div>
