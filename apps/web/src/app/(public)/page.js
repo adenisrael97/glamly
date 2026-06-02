@@ -1,22 +1,22 @@
 import dynamic from 'next/dynamic';
 
 // Critical above-the-fold component - load immediately
-import Hero from "../components/Landing/Hero";
+import Hero from "@/components/Landing/Hero";
 
 // Non-critical components - load when needed
-const Service = dynamic(() => import("../components/Landing/Service"), {
+const Service = dynamic(() => import("@/components/Landing/Service"), {
   loading: () => <div className="h-32 bg-gray-100 animate-pulse"></div>
 });
 
-const ServicesCard = dynamic(() => import("../components/Landing/ServicesCard"), {
+const ServicesCard = dynamic(() => import("@/components/Landing/ServicesCard"), {
   loading: () => <div className="h-64 bg-gray-100 animate-pulse"></div>
 });
 
-const Collection = dynamic(() => import("../components/Landing/Collection"), {
+const Collection = dynamic(() => import("@/components/Landing/Collection"), {
   loading: () => <div className="h-48 bg-gray-100 animate-pulse"></div>
 });
 
-const Packages = dynamic(() => import("../components/Landing/Packages"), {
+const Packages = dynamic(() => import("@/components/Landing/Packages"), {
   loading: () => <div className="h-56 bg-gray-100 animate-pulse"></div>
 });
 
