@@ -1,0 +1,107 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: typecheck · lint · test · build
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: glamly
+          POSTGRES_PASSWORD: glamly_ci
+          POSTGRES_DB: glamly_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      # ── Infrastructure ──────────────────────────────────────────────────────
+      DATABASE_URL: "postgresql://glamly:glamly_ci@localhost:5432/glamly_test"
+      REDIS_URL: "redis://localhost:6379"
+      # ── Auth ────────────────────────────────────────────────────────────────
+      JWT_ACCESS_SECRET: "ci_access_secret_at_least_thirty_two_characters"
+      JWT_REFRESH_SECRET: "ci_refresh_secret_at_least_thirty_two_characters"
+      JWT_ACCESS_EXPIRES_IN: "15m"
+      JWT_REFRESH_EXPIRES_IN: "30d"
+      # ── API ─────────────────────────────────────────────────────────────────
+      PORT: "4001"
+      NODE_ENV: "test"
+      CORS_ORIGINS: "http://localhost:3000"
+      # ── Third-party stubs (tests mock these; stubs satisfy env validation) ──
+      PAYSTACK_SECRET_KEY: "sk_test_ci_placeholder_key_for_env_validation"
+      WEB_APP_URL: "http://localhost:3000"
+      # ── Web (Next.js build) ─────────────────────────────────────────────────
+      NEXT_PUBLIC_API_URL: "http://localhost:4001/api/v1"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: "10.11.0"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Prisma client must be generated before typecheck: the API source
+      # imports generated types from @prisma/client.
+      - name: Generate Prisma client
+        run: pnpm --filter @glamly/api db:generate
+
+      # Apply all pending migrations against the CI Postgres service.
+      - name: Run database migrations
+        run: pnpm --filter @glamly/api db:migrate:deploy
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      # turbo test depends on ^build (shared build runs first, then api/web tests).
+      - name: Test
+        run: pnpm test
+
+      # Build verification: Next.js + API tsc. Uses a production-like API URL
+      # so the baked-in NEXT_PUBLIC_API_URL is sensible even in this check.
+      - name: Build
+        run: pnpm build
+        env:
+          NEXT_PUBLIC_API_URL: "https://api.glamly.ng"
+          NODE_ENV: "production"
