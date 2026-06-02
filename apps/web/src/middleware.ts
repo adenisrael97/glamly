@@ -48,6 +48,6 @@ export function middleware(req: NextRequest): NextResponse {
 export const config = {
   // Run on app routes only; skip Next internals and static assets.
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|push-sw.js|images|icons).*)",
+    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|sw.js|push-sw.js|images|icons|offline).*)",
   ],
 };

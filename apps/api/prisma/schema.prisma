@@ -1,0 +1,348 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  USER
+  STYLIST
+  ADMIN
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+// A stylist begins as PENDING_APPROVAL after registration; an admin moves them to
+// APPROVED (visible to customers), REJECTED (non-reversible), or SUSPENDED
+// (temporarily hidden). Only APPROVED stylists appear on public routes.
+enum StylistStatus {
+  PENDING_APPROVAL
+  APPROVED
+  SUSPENDED
+  REJECTED
+}
+
+// ─── Models ───────────────────────────────────────────────────────────────────
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  name         String
+  phone        String?
+  address      String?
+  avatarUrl    String?
+  role         UserRole  @default(USER)
+  isVerified   Boolean   @default(false)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  stylistProfile    Stylist?
+  bookings          Booking[]
+  reviews           Review[]
+  refreshTokens     RefreshToken[]
+  pushSubscriptions PushSubscription[]
+  auditLogs         AuditLog[]
+  // Stylists this admin user has approved/rejected/suspended
+  approvedStylists  Stylist[]          @relation("StylistApprovals")
+  giftVouchers      GiftVoucher[]
+
+  @@index([role])
+  @@index([deletedAt])
+  @@map("users")
+}
+
+// One Stylist record per User with role=STYLIST. Only APPROVED stylists are
+// visible on public routes; admins see all statuses. Soft-deleted when the
+// account is purged; hard-deleted via cascade when User is destroyed.
+model Stylist {
+  id            String        @id @default(cuid())
+  userId        String        @unique
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bio           String?
+  specialty     String
+  location      String
+  lat           Float?
+  lng           Float?
+  avatarUrl     String?
+  portfolioUrls String[]
+  isAvailable   Boolean       @default(true)
+  // Legacy field kept for backwards compat; derive from status === APPROVED in queries.
+  isVerified    Boolean       @default(false)
+  status        StylistStatus @default(PENDING_APPROVAL)
+  approvedAt    DateTime?
+  approvedById  String?
+  approvedBy    User?         @relation("StylistApprovals", fields: [approvedById], references: [id], onDelete: SetNull)
+  priceFrom     Int
+  rating        Float         @default(0)
+  reviewCount   Int           @default(0)
+  experience    Int?
+  tags          String[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  deletedAt     DateTime?
+
+  services Service[]
+  bookings Booking[]
+  reviews  Review[]
+  packages Package[]
+
+  @@index([rating])
+  @@index([deletedAt])
+  @@index([status])
+  @@index([isAvailable, rating])
+  @@index([location, isAvailable])
+  @@map("stylists")
+}
+
+model Service {
+  id          String   @id @default(cuid())
+  stylistId   String
+  stylist     Stylist  @relation(fields: [stylistId], references: [id], onDelete: Cascade)
+  name        String
+  category    String
+  description String?
+  price       Int
+  duration    Int
+  imageUrl    String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  bookings         Booking[]
+  bookingServices  BookingService[]
+  packageServices  PackageService[]
+  giftVoucherServices GiftVoucherService[]
+
+  @@index([stylistId, isActive])
+  @@index([category])
+  @@map("services")
+}
+
+// Stylist-defined bundles of services sold at a package price.
+model Package {
+  id          String   @id @default(cuid())
+  stylistId   String
+  stylist     Stylist  @relation(fields: [stylistId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  price       Int
+  duration    Int
+  isActive    Boolean  @default(true)
+  imageUrl    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  services PackageService[]
+  bookings Booking[]
+
+  @@index([stylistId, isActive])
+  @@map("packages")
+}
+
+model PackageService {
+  id        String  @id @default(cuid())
+  packageId String
+  package   Package @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  serviceId String
+  service   Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@unique([packageId, serviceId])
+  @@map("package_services")
+}
+
+// Double-booking is prevented by the DB-level unique constraint on (stylistId, startTime).
+model Booking {
+  id             String        @id @default(cuid())
+  userId         String
+  user           User          @relation(fields: [userId], references: [id], onDelete: Restrict)
+  stylistId      String
+  stylist        Stylist       @relation(fields: [stylistId], references: [id], onDelete: Restrict)
+  // Legacy primary service — nullable for package bookings or multi-service bookings.
+  serviceId      String?
+  service        Service?      @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  // Set when this booking is for a package rather than individual services.
+  packageId      String?
+  package        Package?      @relation(fields: [packageId], references: [id], onDelete: Restrict)
+  startTime      DateTime
+  endTime        DateTime
+  status         BookingStatus @default(PENDING)
+  notes          String?
+  totalAmount    Int
+  idempotencyKey      String?       @unique
+  cancelledAt         DateTime?
+  cancellationReason  String?
+  reminderSentAt      DateTime?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  payment  Payment?
+  review   Review?
+  services BookingService[]
+
+  @@index([stylistId, startTime])
+  @@index([userId])
+  @@index([userId, status])
+  @@index([stylistId, status])
+  @@index([status])
+  @@index([startTime])
+  @@index([serviceId])
+  @@map("bookings")
+}
+
+// Join table: individual services included in a multi-service booking.
+// Price is snapshotted at booking time so future service-price changes don't
+// retroactively alter historical booking amounts.
+model BookingService {
+  id        String  @id @default(cuid())
+  bookingId String
+  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  serviceId String
+  service   Service @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  price     Int
+
+  @@unique([bookingId, serviceId])
+  @@map("booking_services")
+}
+
+model Payment {
+  id              String        @id @default(cuid())
+  bookingId       String        @unique
+  booking         Booking       @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  userId          String
+  amount          Int
+  currency        String        @default("NGN")
+  status          PaymentStatus @default(PENDING)
+  paystackRef     String?       @unique
+  paystackEventId String?       @unique
+  paidAt          DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@map("payments")
+}
+
+model Review {
+  id        String    @id @default(cuid())
+  bookingId String    @unique
+  booking   Booking   @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+  stylistId String
+  stylist   Stylist   @relation(fields: [stylistId], references: [id], onDelete: Restrict)
+  rating    Int
+  comment   String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([stylistId, deletedAt])
+  @@index([userId])
+  @@index([deletedAt])
+  @@map("reviews")
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  revoked   Boolean   @default(false)
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("push_subscriptions")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action     String
+  entityType String?
+  entityId   String?
+  metadata   Json?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@index([userId, action])
+  @@map("audit_logs")
+}
+
+// A gift voucher is purchased for a recipient and pre-selects specific services.
+// The voucher code is redeemed when the recipient books, linking to a new booking.
+model GiftVoucher {
+  id            String    @id @default(cuid())
+  code          String    @unique @default(cuid())
+  purchasedById String
+  purchasedBy   User      @relation(fields: [purchasedById], references: [id], onDelete: Restrict)
+  recipientName  String
+  recipientEmail String
+  recipientPhone String?
+  message       String?
+  totalAmount   Int
+  isRedeemed    Boolean   @default(false)
+  redeemedAt    DateTime?
+  expiresAt     DateTime
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  services GiftVoucherService[]
+
+  @@index([purchasedById])
+  @@index([isRedeemed])
+  @@map("gift_vouchers")
+}
+
+// Services included in a gift voucher.
+model GiftVoucherService {
+  id            String      @id @default(cuid())
+  giftVoucherId String
+  giftVoucher   GiftVoucher @relation(fields: [giftVoucherId], references: [id], onDelete: Cascade)
+  serviceId     String
+  service       Service     @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+
+  @@unique([giftVoucherId, serviceId])
+  @@map("gift_voucher_services")
+}

@@ -11,14 +11,16 @@ vi.mock("../repositories/bookings.repository", () => {
     id: string;
     userId: string;
     stylistId: string;
-    serviceId: string;
+    serviceId?: string | null;
+    packageId?: string | null;
+    services?: { serviceId: string; price: number }[];
     startTime: Date;
     endTime: Date;
     totalAmount: number;
     status: string;
     notes?: string;
     idempotencyKey?: string;
-    service: { id: string; name: string; category: string; price: number; duration: number };
+    service?: { id: string; name: string; category: string; price: number; duration: number } | null;
     stylist: { id: string; specialty: string; location: string; avatarUrl: null; user: { name: string } };
   };
 
@@ -31,6 +33,7 @@ vi.mock("../repositories/bookings.repository", () => {
       userId: "user_1",
       stylistId: "st_1",
       serviceId: "svc_1",
+      services: [],
       startTime: new Date(),
       endTime: new Date(),
       totalAmount: 5000,
@@ -117,6 +120,37 @@ vi.mock("../repositories/services.repository", () => ({
         ? { id: "svc_1", stylistId: "st_1", name: "Haircut", price: 5000, duration: 60, isActive: true }
         : null,
     ),
+    findAllByIdsForStylist: vi.fn(async (ids: string[], stylistId: string) =>
+      stylistId === "st_1"
+        ? ids
+            .filter((id) => id === "svc_1" || id === "svc_2")
+            .map((id) =>
+              id === "svc_1"
+                ? { id: "svc_1", stylistId: "st_1", name: "Haircut", price: 5000, duration: 60, isActive: true }
+                : { id: "svc_2", stylistId: "st_1", name: "Beard Trim", price: 3000, duration: 30, isActive: true },
+            )
+        : [],
+    ),
+  },
+}));
+
+vi.mock("../repositories/packages.repository", () => ({
+  packagesRepository: {
+    findById: vi.fn(async (id: string) =>
+      id === "pkg_1"
+        ? {
+            id: "pkg_1",
+            stylistId: "st_1",
+            name: "Full Package",
+            price: 7500,
+            duration: 90,
+            services: [
+              { serviceId: "svc_1", service: { price: 5000 } },
+              { serviceId: "svc_2", service: { price: 3000 } },
+            ],
+          }
+        : null,
+    ),
   },
 }));
 
@@ -167,7 +201,7 @@ describe("bookingsService.create", () => {
     const start = tomorrow10am();
     const result = await bookingsService.create(CUSTOMER, {
       stylistId: "st_1",
-      serviceId: "svc_1",
+      serviceIds: ["svc_1"],
       startTime: start.toISOString(),
     });
 
@@ -181,7 +215,7 @@ describe("bookingsService.create", () => {
     const key = "idem-key-1";
     const first = await bookingsService.create(CUSTOMER, {
       stylistId: "st_1",
-      serviceId: "svc_1",
+      serviceIds: ["svc_1"],
       startTime: start.toISOString(),
       idempotencyKey: key,
     });
@@ -189,7 +223,7 @@ describe("bookingsService.create", () => {
     // Second call with same key from same actor → replay
     const second = await bookingsService.create(CUSTOMER, {
       stylistId: "st_1",
-      serviceId: "svc_1",
+      serviceIds: ["svc_1"],
       startTime: start.toISOString(),
       idempotencyKey: key,
     });
@@ -203,7 +237,7 @@ describe("bookingsService.create", () => {
     const key = "idem-key-cross";
     await bookingsService.create(CUSTOMER, {
       stylistId: "st_1",
-      serviceId: "svc_1",
+      serviceIds: ["svc_1"],
       startTime: start.toISOString(),
       idempotencyKey: key,
     });
@@ -212,7 +246,7 @@ describe("bookingsService.create", () => {
     await expect(
       bookingsService.create(otherActor, {
         stylistId: "st_1",
-        serviceId: "svc_1",
+        serviceIds: ["svc_1"],
         startTime: start.toISOString(),
         idempotencyKey: key,
       }),
@@ -223,7 +257,7 @@ describe("bookingsService.create", () => {
     await expect(
       bookingsService.create(CUSTOMER, {
         stylistId: "st_unknown",
-        serviceId: "svc_1",
+        serviceIds: ["svc_1"],
         startTime: tomorrow10am().toISOString(),
       }),
     ).rejects.toMatchObject({ statusCode: 404 });
@@ -233,7 +267,7 @@ describe("bookingsService.create", () => {
     await expect(
       bookingsService.create(CUSTOMER, {
         stylistId: "st_1",
-        serviceId: "svc_unknown",
+        serviceIds: ["svc_unknown"],
         startTime: tomorrow10am().toISOString(),
       }),
     ).rejects.toMatchObject({ statusCode: 404 });
@@ -250,7 +284,7 @@ describe("bookingsService.create", () => {
     await expect(
       bookingsService.create(CUSTOMER, {
         stylistId: "st_1",
-        serviceId: "svc_1",
+        serviceIds: ["svc_1"],
         startTime: pastDate.toISOString(),
       }),
     ).rejects.toMatchObject({ code: ERROR_CODES.BOOKING_SLOT_UNAVAILABLE });
@@ -264,7 +298,7 @@ describe("bookingsService.create", () => {
     await expect(
       bookingsService.create(CUSTOMER, {
         stylistId: "st_1",
-        serviceId: "svc_1",
+        serviceIds: ["svc_1"],
         startTime: outOfHours.toISOString(),
       }),
     ).rejects.toMatchObject({ code: ERROR_CODES.BOOKING_SLOT_UNAVAILABLE });
@@ -279,7 +313,7 @@ describe("bookingsService.create", () => {
     await expect(
       bookingsService.create(CUSTOMER, {
         stylistId: "st_1",
-        serviceId: "svc_1",
+        serviceIds: ["svc_1"],
         startTime: tomorrow10am().toISOString(),
       }),
     ).rejects.toMatchObject({ code: ERROR_CODES.BOOKING_SLOT_TAKEN });
@@ -294,7 +328,7 @@ describe("bookingsService.create", () => {
     await expect(
       bookingsService.create(CUSTOMER, {
         stylistId: "st_1",
-        serviceId: "svc_1",
+        serviceIds: ["svc_1"],
         startTime: tomorrow10am().toISOString(),
       }),
     ).rejects.toMatchObject({ code: ERROR_CODES.BOOKING_SLOT_UNAVAILABLE });
@@ -307,7 +341,7 @@ describe("bookingsService.listMine", () => {
   it("returns customer-view for a USER actor", async () => {
     // Plant two bookings for this user
     repoStore.set("bk_a", {
-      id: "bk_a", userId: "user_1", stylistId: "st_1", serviceId: "svc_1",
+      id: "bk_a", userId: "user_1", stylistId: "st_1", serviceIds: ["svc_1"],
       startTime: new Date(), endTime: new Date(), totalAmount: 5000, status: "PENDING",
       service: { id: "svc_1", name: "X", category: "Hair", price: 5000, duration: 60 },
       stylist: { id: "st_1", specialty: "Hair", location: "Lagos", avatarUrl: null, user: { name: "J" } },
@@ -321,7 +355,7 @@ describe("bookingsService.listMine", () => {
 
   it("returns provider-view for a STYLIST actor", async () => {
     repoStore.set("bk_b", {
-      id: "bk_b", userId: "user_2", stylistId: "st_1", serviceId: "svc_1",
+      id: "bk_b", userId: "user_2", stylistId: "st_1", serviceIds: ["svc_1"],
       startTime: new Date(), endTime: new Date(), totalAmount: 5000, status: "PENDING",
       service: { id: "svc_1", name: "X", category: "Hair", price: 5000, duration: 60 },
       stylist: { id: "st_1", specialty: "Hair", location: "Lagos", avatarUrl: null, user: { name: "J" } },
@@ -352,7 +386,7 @@ describe("bookingsService.getByIdForActor", () => {
   it("returns booking when actor is the customer", async () => {
     const start = tomorrow10am();
     const created = await bookingsService.create(CUSTOMER, {
-      stylistId: "st_1", serviceId: "svc_1", startTime: start.toISOString(),
+      stylistId: "st_1", serviceIds: ["svc_1"], startTime: start.toISOString(),
     });
     const booking = await bookingsService.getByIdForActor(CUSTOMER, created.booking.id);
     expect(booking.id).toBe(created.booking.id);
@@ -361,7 +395,7 @@ describe("bookingsService.getByIdForActor", () => {
   it("returns booking when actor is the assigned stylist", async () => {
     const start = tomorrow10am();
     const created = await bookingsService.create(CUSTOMER, {
-      stylistId: "st_1", serviceId: "svc_1", startTime: start.toISOString(),
+      stylistId: "st_1", serviceIds: ["svc_1"], startTime: start.toISOString(),
     });
     const booking = await bookingsService.getByIdForActor(STYLIST_ACTOR, created.booking.id);
     expect(booking.id).toBe(created.booking.id);
@@ -370,7 +404,7 @@ describe("bookingsService.getByIdForActor", () => {
   it("returns booking when actor is an ADMIN", async () => {
     const start = tomorrow10am();
     const created = await bookingsService.create(CUSTOMER, {
-      stylistId: "st_1", serviceId: "svc_1", startTime: start.toISOString(),
+      stylistId: "st_1", serviceIds: ["svc_1"], startTime: start.toISOString(),
     });
     const booking = await bookingsService.getByIdForActor(ADMIN, created.booking.id);
     expect(booking.id).toBe(created.booking.id);
@@ -379,7 +413,7 @@ describe("bookingsService.getByIdForActor", () => {
   it("throws FORBIDDEN when an unrelated user requests the booking", async () => {
     const start = tomorrow10am();
     const created = await bookingsService.create(CUSTOMER, {
-      stylistId: "st_1", serviceId: "svc_1", startTime: start.toISOString(),
+      stylistId: "st_1", serviceIds: ["svc_1"], startTime: start.toISOString(),
     });
     const stranger = { userId: "stranger_99", role: ROLES.USER };
     await expect(
@@ -400,7 +434,7 @@ describe("bookingsService.cancel", () => {
   it("cancels a PENDING booking and returns the updated row", async () => {
     const start = tomorrow10am();
     const { booking } = await bookingsService.create(CUSTOMER, {
-      stylistId: "st_1", serviceId: "svc_1", startTime: start.toISOString(),
+      stylistId: "st_1", serviceIds: ["svc_1"], startTime: start.toISOString(),
     });
 
     const updated = await bookingsService.cancel(CUSTOMER, booking.id, { reason: "Changed mind" });
@@ -410,7 +444,7 @@ describe("bookingsService.cancel", () => {
   it("throws FORBIDDEN when a different customer tries to cancel", async () => {
     const start = tomorrow10am();
     const { booking } = await bookingsService.create(CUSTOMER, {
-      stylistId: "st_1", serviceId: "svc_1", startTime: start.toISOString(),
+      stylistId: "st_1", serviceIds: ["svc_1"], startTime: start.toISOString(),
     });
 
     const other = { userId: "other_user", role: ROLES.USER };
@@ -422,7 +456,7 @@ describe("bookingsService.cancel", () => {
   it("throws BOOKING_INVALID_STATE when cancelling a CANCELLED booking", async () => {
     const start = tomorrow10am();
     const { booking } = await bookingsService.create(CUSTOMER, {
-      stylistId: "st_1", serviceId: "svc_1", startTime: start.toISOString(),
+      stylistId: "st_1", serviceIds: ["svc_1"], startTime: start.toISOString(),
     });
     await bookingsService.cancel(CUSTOMER, booking.id, {});
 
@@ -434,7 +468,7 @@ describe("bookingsService.cancel", () => {
   it("allows an ADMIN to cancel another user's booking", async () => {
     const start = tomorrow10am();
     const { booking } = await bookingsService.create(CUSTOMER, {
-      stylistId: "st_1", serviceId: "svc_1", startTime: start.toISOString(),
+      stylistId: "st_1", serviceIds: ["svc_1"], startTime: start.toISOString(),
     });
     const updated = await bookingsService.cancel(ADMIN, booking.id, {});
     expect(updated.status).toBe("CANCELLED");
@@ -446,7 +480,7 @@ describe("bookingsService.cancel", () => {
 describe("bookingsService.reschedule", () => {
   it("reschedules a PENDING booking to a new valid slot", async () => {
     const { booking } = await bookingsService.create(CUSTOMER, {
-      stylistId: "st_1", serviceId: "svc_1", startTime: tomorrow10am().toISOString(),
+      stylistId: "st_1", serviceIds: ["svc_1"], startTime: tomorrow10am().toISOString(),
     });
 
     const newSlot = new Date();
@@ -461,7 +495,7 @@ describe("bookingsService.reschedule", () => {
 
   it("throws SLOT_TAKEN when the new slot is unavailable", async () => {
     const { booking } = await bookingsService.create(CUSTOMER, {
-      stylistId: "st_1", serviceId: "svc_1", startTime: tomorrow10am().toISOString(),
+      stylistId: "st_1", serviceIds: ["svc_1"], startTime: tomorrow10am().toISOString(),
     });
 
     (bookingsRepository.rescheduleWithSlotGuard as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
@@ -480,7 +514,7 @@ describe("bookingsService.reschedule", () => {
 
   it("throws BOOKING_INVALID_STATE when rescheduling a CANCELLED booking", async () => {
     const { booking } = await bookingsService.create(CUSTOMER, {
-      stylistId: "st_1", serviceId: "svc_1", startTime: tomorrow10am().toISOString(),
+      stylistId: "st_1", serviceIds: ["svc_1"], startTime: tomorrow10am().toISOString(),
     });
     await bookingsService.cancel(CUSTOMER, booking.id, {});
 
@@ -499,7 +533,7 @@ describe("bookingsService.reschedule", () => {
 describe("bookingsService.complete", () => {
   it("allows the assigned stylist to complete a PENDING booking", async () => {
     const { booking } = await bookingsService.create(CUSTOMER, {
-      stylistId: "st_1", serviceId: "svc_1", startTime: tomorrow10am().toISOString(),
+      stylistId: "st_1", serviceIds: ["svc_1"], startTime: tomorrow10am().toISOString(),
     });
 
     const updated = await bookingsService.complete(STYLIST_ACTOR, booking.id);
@@ -508,7 +542,7 @@ describe("bookingsService.complete", () => {
 
   it("allows an ADMIN to complete any booking", async () => {
     const { booking } = await bookingsService.create(CUSTOMER, {
-      stylistId: "st_1", serviceId: "svc_1", startTime: tomorrow10am().toISOString(),
+      stylistId: "st_1", serviceIds: ["svc_1"], startTime: tomorrow10am().toISOString(),
     });
     const updated = await bookingsService.complete(ADMIN, booking.id);
     expect(updated.status).toBe("COMPLETED");
@@ -516,7 +550,7 @@ describe("bookingsService.complete", () => {
 
   it("throws FORBIDDEN when the customer (non-provider) tries to complete", async () => {
     const { booking } = await bookingsService.create(CUSTOMER, {
-      stylistId: "st_1", serviceId: "svc_1", startTime: tomorrow10am().toISOString(),
+      stylistId: "st_1", serviceIds: ["svc_1"], startTime: tomorrow10am().toISOString(),
     });
     await expect(
       bookingsService.complete(CUSTOMER, booking.id),
@@ -525,7 +559,7 @@ describe("bookingsService.complete", () => {
 
   it("throws BOOKING_INVALID_STATE when completing a CANCELLED booking", async () => {
     const { booking } = await bookingsService.create(CUSTOMER, {
-      stylistId: "st_1", serviceId: "svc_1", startTime: tomorrow10am().toISOString(),
+      stylistId: "st_1", serviceIds: ["svc_1"], startTime: tomorrow10am().toISOString(),
     });
     await bookingsService.cancel(CUSTOMER, booking.id, {});
 

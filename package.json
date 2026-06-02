@@ -1,39 +1,26 @@
 {
   "name": "glamly",
-  "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "postinstall": "node scripts/patch-next.js"
-  },
-  "dependencies": {
-    "@testing-library/jest-dom": "^6.9.1",
-    "@testing-library/react": "^16.3.2",
-    "@testing-library/user-event": "^14.6.1",
-    "@vitejs/plugin-react": "^6.0.1",
-    "@tailwindcss/postcss": "^4.2.4",
-    "critters": "^0.0.23",
-    "framer-motion": "^12.36.0",
-    "jsdom": "^29.0.2",
-    "next": "^15.5.15",
-    "postcss": "^8.5.12",
-    "react": "19.2.3",
-    "react-dom": "19.2.3",
-    "react-icons": "^5.6.0",
-    "swr": "^2.4.1",
-    "tailwindcss": "^4.2.4",
-    "vitest": "^4.1.5"
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
+    "test": "turbo test",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,mjs,json,md}\" --ignore-path .gitignore"
   },
   "devDependencies": {
-    "@babel/generator": "^7.29.1",
-    "autoprefixer": "^10.5.0",
-    "eslint": "^9",
-    "eslint-config-next": "16.1.6",
-    "zod": "^3.25.76"
+    "prettier": "^3.5.3",
+    "turbo": "^2.5.4"
+  },
+  "packageManager": "pnpm@10.11.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild", "sharp", "unrs-resolver", "prisma", "@prisma/client", "@prisma/engines"],
+    "overrides": {
+      "postcss@<8.5.10": ">=8.5.10"
+    }
   }
 }

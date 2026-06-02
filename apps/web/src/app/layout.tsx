@@ -1,10 +1,14 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import type { ReactNode } from "react";
 import Navbar from "@/components/Layout/Navbar";
 import Footer from "@/components/Layout/Footer";
 import { AuthProvider } from "@/context/AuthContext";
+import { InstallPrompt } from "@/components/ui/InstallPrompt";
+import { UpdatePrompt } from "@/components/ui/UpdatePrompt";
+import { OfflineBanner } from "@/components/ui/OfflineBanner";
+import { ServiceWorkerRegistrar } from "@/components/ui/ServiceWorkerRegistrar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,6 +19,13 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
+
+export const viewport: Viewport = {
+  themeColor: "#e11d48",
+  width: "device-width",
+  initialScale: 1,
+  minimumScale: 1,
+};
 
 export const metadata: Metadata = {
   title: {
@@ -31,6 +42,25 @@ export const metadata: Metadata = {
     siteName: "Glamly",
     type: "website",
   },
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Glamly",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  icons: {
+    icon: [
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [
+      { url: "/icons/icon-152.png", sizes: "152x152", type: "image/png" },
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
+  },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -38,9 +68,15 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <AuthProvider>
+          {/* PWA banners sit outside the scrollable content */}
+          <OfflineBanner />
           <Navbar />
           {children}
           <Footer />
+          <InstallPrompt />
+          <UpdatePrompt />
+          {/* Registers sw.js; must be a client component */}
+          <ServiceWorkerRegistrar />
         </AuthProvider>
       </body>
     </html>

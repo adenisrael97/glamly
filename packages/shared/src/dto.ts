@@ -6,6 +6,7 @@
 // shapes referenced in each section.
 
 import type { BookingStatus } from "./booking";
+import type { StylistStatus } from "./admin";
 
 // ─── Pagination ───────────────────────────────────────────────────────────────
 
@@ -46,6 +47,7 @@ export interface StylistListItem {
   reviewCount: number;
   isAvailable: boolean;
   isVerified: boolean;
+  status: StylistStatus;
   experience: number | null;
   tags: string[];
   createdAt: string;
@@ -77,6 +79,8 @@ export interface StylistDetail {
   priceFrom: number;
   isAvailable: boolean;
   isVerified: boolean;
+  status: StylistStatus;
+  approvedAt: string | null;
   experience: number | null;
   tags: string[];
   createdAt: string;
@@ -86,11 +90,45 @@ export interface StylistDetail {
   portfolioUrls: string[];
   user: StylistUserSummary;
   services: StylistServiceSummary[];
+  packages: PackageDTO[];
   ratingsSummary: RatingsSummary;
   availability: {
     isAvailable: boolean;
     nextAvailableSlot: string | null;
   };
+}
+
+// ─── Packages ─────────────────────────────────────────────────────────────────
+
+export interface PackageDTO {
+  id: string;
+  stylistId: string;
+  name: string;
+  description: string | null;
+  price: number;
+  duration: number;
+  isActive: boolean;
+  imageUrl: string | null;
+  createdAt: string;
+  updatedAt: string;
+  services: StylistServiceSummary[];
+}
+
+// ─── Gift Vouchers ────────────────────────────────────────────────────────────
+
+export interface GiftVoucherDTO {
+  id: string;
+  code: string;
+  recipientName: string;
+  recipientEmail: string;
+  recipientPhone: string | null;
+  message: string | null;
+  totalAmount: number;
+  isRedeemed: boolean;
+  redeemedAt: string | null;
+  expiresAt: string;
+  createdAt: string;
+  services: StylistServiceSummary[];
 }
 
 // ─── Services ─────────────────────────────────────────────────────────────────
@@ -157,11 +195,19 @@ export interface BookingStylistSummary {
   user: { name: string };
 }
 
+export interface BookingServiceLineItem {
+  id: string;
+  serviceId: string;
+  price: number;
+  service: BookingServiceSummary;
+}
+
 export interface BookingDTO {
   id: string;
   userId: string;
   stylistId: string;
-  serviceId: string;
+  serviceId: string | null;
+  packageId: string | null;
   startTime: string;
   endTime: string;
   status: BookingStatus;
@@ -173,8 +219,9 @@ export interface BookingDTO {
   reminderSentAt: string | null;
   createdAt: string;
   updatedAt: string;
-  service: BookingServiceSummary;
+  service: BookingServiceSummary | null;
   stylist: BookingStylistSummary;
+  services: BookingServiceLineItem[];
 }
 
 /** Role-aware "my bookings" — `view` tells the client whose perspective it is. */

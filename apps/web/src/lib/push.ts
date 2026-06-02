@@ -5,7 +5,8 @@ import { pushSubscriptionSchema, type VapidPublicKeyResult } from "@glamly/share
 // subscription to the API. Browser-only — every entry point guards on support.
 // The caller passes the access token (held in memory by the API client).
 
-const PUSH_SW_URL = "/push-sw.js";
+// Push handlers are now part of the main app-shell service worker (sw.js).
+const PUSH_SW_URL = "/sw.js";
 const DEFAULT_API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api/v1";
 
 export interface PushAuthOptions {
