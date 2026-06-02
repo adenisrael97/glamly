@@ -9,42 +9,34 @@ const RATING_OPTIONS = [
   { value: 5, label: "5★ only" },
 ];
 
-const SORT_OPTIONS = [
+// Values map to the API's sort/order (see SearchPage.sortParams). The stylist
+// list endpoint sorts on indexed columns only — no free price-range filter.
+export const SORT_OPTIONS = [
   { value: "", label: "Recommended" },
   { value: "rating-desc", label: "Top rated" },
+  { value: "reviews-desc", label: "Most reviewed" },
   { value: "price-asc", label: "Price: Low to High" },
   { value: "price-desc", label: "Price: High to Low" },
-  { value: "experience", label: "Most experienced" },
 ];
 
-const PRICE_PRESETS = [
-  { label: "Any", min: 0, max: 999999 },
-  { label: "Under ₦5k", min: 0, max: 5000 },
-  { label: "₦5k–₦8k", min: 5000, max: 8000 },
-  { label: "₦8k–₦12k", min: 8000, max: 12000 },
-  { label: "₦12k+", min: 12000, max: 999999 },
-];
+export interface SearchFiltersProps {
+  minRating: number;
+  setMinRating: (v: number) => void;
+  sortBy: string;
+  setSortBy: (v: string) => void;
+  onFilterChange?: () => void;
+}
 
-const SearchFilters = memo(({
+const SearchFilters = memo(function SearchFilters({
   minRating,
   setMinRating,
-  priceRange,
-  setPriceRange,
   sortBy,
   setSortBy,
   onFilterChange,
-}) => {
+}: SearchFiltersProps) {
   const [expanded, setExpanded] = useState(false);
 
-  const activePricePreset = PRICE_PRESETS.find(
-    (p) => p.min === priceRange.min && p.max === priceRange.max
-  );
-
-  const activeCount = [
-    minRating > 0,
-    priceRange.min > 0 || priceRange.max < 999999,
-    !!sortBy,
-  ].filter(Boolean).length;
+  const activeCount = [minRating > 0, !!sortBy].filter(Boolean).length;
 
   return (
     <div className="mb-5">
@@ -75,7 +67,10 @@ const SearchFilters = memo(({
             <button
               key={opt.value}
               type="button"
-              onClick={() => { setSortBy(opt.value); onFilterChange?.(); }}
+              onClick={() => {
+                setSortBy(opt.value);
+                onFilterChange?.();
+              }}
               className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-200 ${
                 sortBy === opt.value
                   ? "bg-purple-600 text-white border-purple-600"
@@ -90,7 +85,7 @@ const SearchFilters = memo(({
 
       {/* Expanded panel */}
       {expanded && (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 grid grid-cols-1 sm:grid-cols-3 gap-6 animate-fade-in">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 grid grid-cols-1 sm:grid-cols-2 gap-6 animate-fade-in">
           {/* Rating */}
           <div>
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2.5">Min Rating</p>
@@ -99,7 +94,10 @@ const SearchFilters = memo(({
                 <button
                   key={opt.value}
                   type="button"
-                  onClick={() => { setMinRating(opt.value); onFilterChange?.(); }}
+                  onClick={() => {
+                    setMinRating(opt.value);
+                    onFilterChange?.();
+                  }}
                   className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-200 ${
                     minRating === opt.value
                       ? "bg-yellow-400 text-black border-yellow-400 shadow-sm"
@@ -112,30 +110,6 @@ const SearchFilters = memo(({
             </div>
           </div>
 
-          {/* Price presets */}
-          <div>
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2.5">Price Range</p>
-            <div className="flex flex-wrap gap-2">
-              {PRICE_PRESETS.map((preset) => {
-                const active = activePricePreset?.label === preset.label;
-                return (
-                  <button
-                    key={preset.label}
-                    type="button"
-                    onClick={() => { setPriceRange({ min: preset.min, max: preset.max }); onFilterChange?.(); }}
-                    className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-200 ${
-                      active
-                        ? "bg-purple-600 text-white border-purple-600 shadow-sm"
-                        : "bg-white text-gray-600 border-gray-200 hover:border-purple-300 hover:text-purple-700"
-                    }`}
-                  >
-                    {preset.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
           {/* Sort (full list) */}
           <div>
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2.5">Sort By</p>
@@ -144,7 +118,10 @@ const SearchFilters = memo(({
                 <button
                   key={opt.value}
                   type="button"
-                  onClick={() => { setSortBy(opt.value); onFilterChange?.(); }}
+                  onClick={() => {
+                    setSortBy(opt.value);
+                    onFilterChange?.();
+                  }}
                   className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-200 ${
                     sortBy === opt.value
                       ? "bg-purple-600 text-white border-purple-600 shadow-sm"
@@ -161,7 +138,5 @@ const SearchFilters = memo(({
     </div>
   );
 });
-
-SearchFilters.displayName = "SearchFilters";
 
 export default SearchFilters;

@@ -4,23 +4,18 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useStylist } from "@/hooks/useStylists";
+import type { ReviewDTO, StylistDetail, StylistServiceSummary } from "@glamly/shared";
+import { useStylist, useStylistReviews } from "@/hooks/useStylists";
 import { useFavorites } from "@/hooks/useFavorites";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function StarRating({ rating, max = 5, size = "sm" }) {
+function StarRating({ rating, max = 5, size = "sm" }: { rating: number; max?: number; size?: "sm" | "md" | "lg" }) {
   const sz = size === "lg" ? "w-5 h-5" : size === "md" ? "w-4 h-4" : "w-3.5 h-3.5";
   return (
     <div className="flex items-center gap-0.5" aria-label={`${rating} out of ${max} stars`}>
       {Array.from({ length: max }).map((_, i) => (
-        <svg
-          key={i}
-          className={`${sz} ${i < Math.round(rating) ? "text-yellow-400" : "text-gray-200"}`}
-          fill="currentColor"
-          viewBox="0 0 20 20"
-          aria-hidden="true"
-        >
+        <svg key={i} className={`${sz} ${i < Math.round(rating) ? "text-yellow-400" : "text-gray-200"}`} fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
           <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.38-2.454a1 1 0 00-1.175 0l-3.38 2.454c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.05 9.394c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.967z" />
         </svg>
       ))}
@@ -28,15 +23,15 @@ function StarRating({ rating, max = 5, size = "sm" }) {
   );
 }
 
-function StatCard({ label, value, icon, accent }) {
-  const accentMap = {
+function StatCard({ label, value, icon, accent }: { label: string; value: string | number; icon: string; accent?: string }) {
+  const accentMap: Record<string, string> = {
     purple: "bg-purple-50 border-purple-100 text-purple-700",
     yellow: "bg-yellow-50 border-yellow-100 text-yellow-700",
-    green:  "bg-green-50  border-green-100  text-green-700",
-    blue:   "bg-blue-50   border-blue-100   text-blue-700",
+    green: "bg-green-50 border-green-100 text-green-700",
+    blue: "bg-blue-50 border-blue-100 text-blue-700",
   };
   return (
-    <div className={`flex flex-col items-center p-4 rounded-2xl border text-center ${accentMap[accent] ?? "bg-gray-50 border-gray-100 text-gray-700"}`}>
+    <div className={`flex flex-col items-center p-4 rounded-2xl border text-center ${accent ? accentMap[accent] : "bg-gray-50 border-gray-100 text-gray-700"}`}>
       <span className="text-2xl mb-1.5" aria-hidden="true">{icon}</span>
       <span className="text-xl font-extrabold">{value}</span>
       <span className="text-xs font-medium opacity-70 mt-0.5">{label}</span>
@@ -44,31 +39,34 @@ function StatCard({ label, value, icon, accent }) {
   );
 }
 
-function ReviewCard({ review }) {
+function formatReviewDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-NG", { year: "numeric", month: "short", day: "numeric" });
+}
+
+function ReviewCard({ review }: { review: ReviewDTO }) {
   return (
     <article className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-200">
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
-          <div
-            className="w-10 h-10 rounded-full bg-linear-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white text-sm font-bold shrink-0"
-            aria-hidden="true"
-          >
-            {review.author[0]}
+          <div className="w-10 h-10 rounded-full bg-linear-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white text-sm font-bold shrink-0" aria-hidden="true">
+            {review.user.name[0]?.toUpperCase()}
           </div>
           <div>
-            <p className="text-sm font-semibold text-gray-900">{review.author}</p>
-            <p className="text-xs text-gray-400"><time>{review.date}</time></p>
+            <p className="text-sm font-semibold text-gray-900">{review.user.name}</p>
+            <p className="text-xs text-gray-400">
+              <time dateTime={review.createdAt}>{formatReviewDate(review.createdAt)}</time>
+            </p>
           </div>
         </div>
         <StarRating rating={review.rating} size="sm" />
       </div>
-      <p className="text-sm text-gray-600 leading-relaxed">&ldquo;{review.text}&rdquo;</p>
+      {review.comment && <p className="text-sm text-gray-600 leading-relaxed">&ldquo;{review.comment}&rdquo;</p>}
     </article>
   );
 }
 
-function ServiceItem({ svc, price }) {
-  const icons = {
+function ServiceItem({ service }: { service: StylistServiceSummary }) {
+  const icons: Record<string, string> = {
     Hair: "💇‍♀️",
     Makeup: "💄",
     Nail: "💅",
@@ -78,16 +76,19 @@ function ServiceItem({ svc, price }) {
     Skin: "✨",
     Wax: "🌸",
   };
-  const icon = Object.entries(icons).find(([k]) => svc.includes(k))?.[1] ?? "✨";
+  const icon = Object.entries(icons).find(([k]) => service.name.includes(k) || service.category.includes(k))?.[1] ?? "✨";
   return (
     <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100 hover:border-purple-200 hover:bg-purple-50/40 transition-all duration-200 group">
       <div className="flex items-center gap-3">
         <div className="w-9 h-9 rounded-lg bg-white border border-gray-100 group-hover:border-purple-200 flex items-center justify-center text-lg shadow-sm shrink-0" aria-hidden="true">
           {icon}
         </div>
-        <p className="text-sm font-semibold text-gray-900">{svc}</p>
+        <div>
+          <p className="text-sm font-semibold text-gray-900">{service.name}</p>
+          <p className="text-xs text-gray-400">{service.duration} min · {service.category}</p>
+        </div>
       </div>
-      <span className="text-sm font-bold text-purple-700">from ₦{price.toLocaleString()}</span>
+      <span className="text-sm font-bold text-purple-700">from ₦{service.price.toLocaleString()}</span>
     </div>
   );
 }
@@ -113,46 +114,31 @@ function DetailSkeleton() {
               <div key={i} className="h-20 bg-gray-100 animate-pulse rounded-2xl" />
             ))}
           </div>
-          <div className="space-y-3">
-            <div className="h-4 bg-gray-200 animate-pulse rounded w-full" />
-            <div className="h-4 bg-gray-200 animate-pulse rounded w-5/6" />
-            <div className="h-4 bg-gray-200 animate-pulse rounded w-4/6" />
-          </div>
         </div>
       </div>
     </main>
   );
 }
 
-// ── Portfolio gallery (simulated) ─────────────────────────────────────────────
-
-function PortfolioGallery({ stylist }) {
-  const placeholders = [
-    "/images/background/background1.jpg",
-    "/images/background/background1.jpg",
-    "/images/background/background1.jpg",
-    "/images/background/background1.jpg",
-    "/images/background/background1.jpg",
-    "/images/background/background1.jpg",
-  ];
-
+function PortfolioGallery({ stylist }: { stylist: StylistDetail }) {
+  const photos = stylist.portfolioUrls;
+  if (photos.length === 0) {
+    return (
+      <div className="py-10 text-center text-sm text-gray-400">
+        {stylist.user.name.split(" ")[0]} hasn&apos;t added portfolio photos yet.
+      </div>
+    );
+  }
   return (
     <div className="mb-8">
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-base font-bold text-gray-900">Portfolio</h2>
-        <span className="text-xs text-gray-400 font-medium">{placeholders.length} photos</span>
+        <span className="text-xs text-gray-400 font-medium">{photos.length} photos</span>
       </div>
       <div className="grid grid-cols-3 gap-1.5 rounded-2xl overflow-hidden">
-        {placeholders.map((src, i) => (
-          <div key={i} className="relative aspect-square bg-gray-100 overflow-hidden group cursor-pointer">
-            <Image
-              src={stylist.image}
-              alt={`Portfolio photo ${i + 1} by ${stylist.name}`}
-              fill
-              sizes="(max-width: 768px) 33vw, 15vw"
-              className="object-cover group-hover:scale-110 transition-transform duration-500"
-              loading="lazy"
-            />
+        {photos.map((src, i) => (
+          <div key={`${src}-${i}`} className="relative aspect-square bg-gray-100 overflow-hidden group cursor-pointer">
+            <Image src={src} alt={`Portfolio photo ${i + 1} by ${stylist.user.name}`} fill sizes="(max-width: 768px) 33vw, 15vw" className="object-cover group-hover:scale-110 transition-transform duration-500" loading="lazy" />
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300" />
           </div>
         ))}
@@ -164,13 +150,15 @@ function PortfolioGallery({ stylist }) {
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function StylistDetailPage() {
-  const { id } = useParams();
+  const params = useParams<{ id: string }>();
+  const id = params.id;
   const router = useRouter();
   const [imgError, setImgError] = useState(false);
-  const [activeTab, setActiveTab] = useState("about");
+  const [activeTab, setActiveTab] = useState<"about" | "services" | "portfolio" | "reviews">("about");
   const [copied, setCopied] = useState(false);
 
   const { stylist, isLoading, isError } = useStylist(id);
+  const { reviews } = useStylistReviews(id, { limit: 20 });
   const { isFavorited, toggle: toggleFavorite } = useFavorites();
 
   const favorited = stylist ? isFavorited(stylist.id) : false;
@@ -178,7 +166,7 @@ export default function StylistDetailPage() {
   const handleShare = async () => {
     const url = window.location.href;
     if (navigator.share) {
-      await navigator.share({ title: stylist?.name, url });
+      await navigator.share({ title: stylist?.user.name, url });
     } else {
       await navigator.clipboard.writeText(url);
       setCopied(true);
@@ -188,7 +176,7 @@ export default function StylistDetailPage() {
 
   if (isLoading) return <DetailSkeleton />;
 
-  if (isError || (!isLoading && !stylist)) {
+  if (isError || !stylist) {
     return (
       <main className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div role="alert" className="text-center px-4">
@@ -199,10 +187,7 @@ export default function StylistDetailPage() {
           </div>
           <h1 className="text-lg font-bold text-gray-900 mb-2">Stylist not found</h1>
           <p className="text-sm text-gray-500 mb-6">This profile may have been removed or the link is incorrect.</p>
-          <Link
-            href="/stylist"
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-xl transition-colors"
-          >
+          <Link href="/stylist" className="inline-flex items-center gap-2 px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-xl transition-colors">
             ← Back to all stylists
           </Link>
         </div>
@@ -210,42 +195,30 @@ export default function StylistDetailPage() {
     );
   }
 
-  const reviews = stylist.reviews ?? [];
-  const avgRating = reviews.length > 0
-    ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1)
-    : stylist.rating;
+  const name = stylist.user.name;
+  const cover = !imgError && stylist.avatarUrl ? stylist.avatarUrl : "/images/background/background1.jpg";
+  const avgRating = stylist.ratingsSummary.average;
+  const reviewCount = stylist.ratingsSummary.count;
+  const isAvailable = stylist.availability.isAvailable;
 
   const tabs = [
-    { id: "about",    label: "About" },
-    { id: "services", label: "Services" },
-    { id: "portfolio",label: "Portfolio" },
-    { id: "reviews",  label: `Reviews (${reviews.length})` },
+    { id: "about" as const, label: "About" },
+    { id: "services" as const, label: "Services" },
+    { id: "portfolio" as const, label: "Portfolio" },
+    { id: "reviews" as const, label: `Reviews (${reviewCount})` },
   ];
 
   return (
     <main className="min-h-screen bg-gray-50">
-
       {/* ── Hero banner ── */}
       <div className="relative h-72 sm:h-96 overflow-hidden bg-linear-to-br from-purple-900 via-purple-800 to-black">
-        <Image
-          src={!imgError ? stylist.image : "/images/background/background1.jpg"}
-          alt={`${stylist.name} cover`}
-          fill
-          className="object-cover opacity-40"
-          priority
-          onError={() => setImgError(true)}
-        />
-        {/* Layered gradient for depth */}
+        <Image src={cover} alt={`${name} cover`} fill className="object-cover opacity-40" priority onError={() => setImgError(true)} />
         <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent" />
         <div className="absolute inset-0 bg-linear-to-r from-purple-900/30 to-transparent" />
 
         {/* Nav row */}
         <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-4 sm:px-6 pt-5 z-10">
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="inline-flex items-center gap-1.5 text-white/80 hover:text-white text-sm font-medium transition-colors bg-white/10 hover:bg-white/20 backdrop-blur-sm px-3.5 py-2 rounded-xl border border-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-          >
+          <button type="button" onClick={() => router.back()} className="inline-flex items-center gap-1.5 text-white/80 hover:text-white text-sm font-medium transition-colors bg-white/10 hover:bg-white/20 backdrop-blur-sm px-3.5 py-2 rounded-xl border border-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
             </svg>
@@ -253,13 +226,7 @@ export default function StylistDetailPage() {
           </button>
 
           <div className="flex items-center gap-2">
-            {/* Share */}
-            <button
-              type="button"
-              onClick={handleShare}
-              aria-label="Share profile"
-              className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/10 flex items-center justify-center text-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-            >
+            <button type="button" onClick={handleShare} aria-label="Share profile" className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/10 flex items-center justify-center text-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">
               {copied ? (
                 <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -271,60 +238,36 @@ export default function StylistDetailPage() {
               )}
             </button>
 
-            {/* Favorite */}
-            <button
-              type="button"
-              onClick={() => toggleFavorite(stylist.id)}
-              aria-label={favorited ? "Remove from saved" : "Save stylist"}
-              aria-pressed={favorited}
-              className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/10 flex items-center justify-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-            >
-              <svg
-                className={`w-4.5 h-4.5 transition-colors ${favorited ? "text-red-400" : "text-white"}`}
-                fill={favorited ? "currentColor" : "none"}
-                stroke="currentColor"
-                strokeWidth={favorited ? 0 : 2}
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-              >
+            <button type="button" onClick={() => toggleFavorite(stylist.id)} aria-label={favorited ? "Remove from saved" : "Save stylist"} aria-pressed={favorited} className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/10 flex items-center justify-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">
+              <svg className={`w-4.5 h-4.5 transition-colors ${favorited ? "text-red-400" : "text-white"}`} fill={favorited ? "currentColor" : "none"} stroke="currentColor" strokeWidth={favorited ? 0 : 2} viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
               </svg>
             </button>
           </div>
         </div>
 
-        {/* Hero identity — bottom of banner */}
+        {/* Hero identity */}
         <div className="absolute bottom-0 left-0 right-0 px-4 sm:px-6 pb-6 z-10">
           <div className="flex items-end gap-4">
-            {/* Avatar floats on banner */}
             <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden shadow-2xl ring-4 ring-white/20 shrink-0">
-              {!imgError ? (
-                <Image
-                  src={stylist.image}
-                  alt={stylist.name}
-                  fill
-                  className="object-cover"
-                  sizes="96px"
-                  onError={() => setImgError(true)}
-                />
+              {!imgError && stylist.avatarUrl ? (
+                <Image src={stylist.avatarUrl} alt={name} fill className="object-cover" sizes="96px" onError={() => setImgError(true)} />
               ) : (
                 <div className="w-full h-full bg-linear-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white text-3xl font-bold" aria-hidden="true">
-                  {stylist.name[0]}
+                  {name[0]}
                 </div>
               )}
             </div>
             <div className="pb-1">
               <div className="flex items-center gap-2 mb-1 flex-wrap">
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-white leading-tight">{stylist.name}</h1>
-                {stylist.available ? (
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-white leading-tight">{name}</h1>
+                {isAvailable ? (
                   <span className="inline-flex items-center gap-1 bg-green-500 text-white text-xs font-semibold px-2.5 py-0.5 rounded-full shadow-sm">
                     <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" aria-hidden="true" />
                     Available
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1 bg-gray-600/80 text-white text-xs font-medium px-2.5 py-0.5 rounded-full backdrop-blur-sm">
-                    Busy
-                  </span>
+                  <span className="inline-flex items-center gap-1 bg-gray-600/80 text-white text-xs font-medium px-2.5 py-0.5 rounded-full backdrop-blur-sm">Busy</span>
                 )}
               </div>
               <div className="flex items-center gap-3 flex-wrap text-white/70 text-sm">
@@ -333,18 +276,20 @@ export default function StylistDetailPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
-                  {stylist.location}, Lagos
+                  {stylist.location}
                 </span>
+                {stylist.experience != null && (
+                  <span className="flex items-center gap-1">
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    {stylist.experience} yrs experience
+                  </span>
+                )}
                 <span className="flex items-center gap-1">
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  {stylist.experience} yrs experience
-                </span>
-                <span className="flex items-center gap-1">
-                  <StarRating rating={stylist.rating} size="sm" />
-                  <span className="font-semibold text-white ml-0.5">{stylist.rating}</span>
-                  <span className="text-white/50">({stylist.reviewCount})</span>
+                  <StarRating rating={avgRating} size="sm" />
+                  <span className="font-semibold text-white ml-0.5">{avgRating.toFixed(1)}</span>
+                  <span className="text-white/50">({reviewCount})</span>
                 </span>
               </div>
             </div>
@@ -355,47 +300,38 @@ export default function StylistDetailPage() {
       {/* ── Main card ── */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-6 pb-32 relative z-10">
         <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100">
-
-          {/* Service tags */}
+          {/* Tags */}
           <div className="px-6 sm:px-8 pt-5 pb-1">
-            <div className="flex flex-wrap gap-2" aria-label="Services offered">
-              {stylist.services.map((svc) => (
-                <span key={svc} className="text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-100 px-3 py-1.5 rounded-full">
-                  {svc}
-                </span>
-              ))}
-              {stylist.tags?.map((tag) => (
-                <span key={tag} className="text-xs font-medium bg-gray-50 text-gray-500 border border-gray-100 px-3 py-1.5 rounded-full">
-                  #{tag}
-                </span>
+            <div className="flex flex-wrap gap-2" aria-label="Specialty and tags">
+              <span className="text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-100 px-3 py-1.5 rounded-full">{stylist.specialty}</span>
+              {stylist.tags.map((tag) => (
+                <span key={tag} className="text-xs font-medium bg-gray-50 text-gray-500 border border-gray-100 px-3 py-1.5 rounded-full">#{tag}</span>
               ))}
             </div>
           </div>
 
           {/* Stats bar */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 px-6 sm:px-8 py-5">
-            <StatCard icon="⭐" value={avgRating} label="Rating" accent="yellow" />
-            <StatCard icon="📅" value={stylist.completedBookings} label="Bookings" accent="purple" />
-            <StatCard icon="⚡" value={stylist.responseTime} label="Response" accent="blue" />
-            <StatCard icon="🔁" value={`${65 + (stylist.id % 30)}%`} label="Repeat clients" accent="green" />
+            <StatCard icon="⭐" value={avgRating.toFixed(1)} label="Rating" accent="yellow" />
+            <StatCard icon="📝" value={reviewCount} label="Reviews" accent="purple" />
+            <StatCard icon="🎓" value={stylist.experience != null ? `${stylist.experience}y` : "—"} label="Experience" accent="blue" />
+            <StatCard icon="💰" value={`₦${stylist.priceFrom.toLocaleString()}`} label="From" accent="green" />
           </div>
 
           {/* Tabs */}
           <div className="border-b border-gray-100 px-6 sm:px-8" role="tablist" aria-label="Stylist profile sections">
             <div className="flex gap-1 overflow-x-auto scrollbar-none -mb-px">
-              {tabs.map(({ id, label }) => (
+              {tabs.map(({ id: tabId, label }) => (
                 <button
-                  key={id}
+                  key={tabId}
                   type="button"
                   role="tab"
-                  id={`tab-${id}`}
-                  aria-selected={activeTab === id}
-                  aria-controls={`tabpanel-${id}`}
-                  onClick={() => setActiveTab(id)}
+                  id={`tab-${tabId}`}
+                  aria-selected={activeTab === tabId}
+                  aria-controls={`tabpanel-${tabId}`}
+                  onClick={() => setActiveTab(tabId)}
                   className={`shrink-0 pb-3.5 pt-1 px-3 text-sm font-semibold capitalize transition-colors border-b-2 -mb-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 rounded-t whitespace-nowrap ${
-                    activeTab === id
-                      ? "border-purple-600 text-purple-700"
-                      : "border-transparent text-gray-400 hover:text-gray-600"
+                    activeTab === tabId ? "border-purple-600 text-purple-700" : "border-transparent text-gray-400 hover:text-gray-600"
                   }`}
                 >
                   {label}
@@ -406,34 +342,22 @@ export default function StylistDetailPage() {
 
           {/* ── Tab panels ── */}
           <div className="p-6 sm:p-8">
-
             {/* About */}
             {activeTab === "about" && (
               <div id="tabpanel-about" role="tabpanel" aria-labelledby="tab-about">
-                <div className="mb-6">
-                  <h2 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">About</h2>
-                  <p className="text-sm text-gray-600 leading-7">
-                    {stylist.bio || (
-                      <>
-                        {stylist.name} is a highly skilled beauty professional based in {stylist.location}, Lagos.
-                        With <strong>{stylist.experience} years</strong> of hands-on experience, they specialise in{" "}
-                        <strong>{stylist.services.join(", ")}</strong> and have built a loyal clientele through
-                        exceptional attention to detail, creativity, and client satisfaction. Known for tailoring
-                        every look to the individual, {stylist.name.split(" ")[0]} brings both technical mastery
-                        and genuine warmth to every appointment.
-                      </>
-                    )}
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
+                <h2 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">About</h2>
+                <p className="text-sm text-gray-600 leading-7 mb-6">
+                  {stylist.bio ||
+                    `${name} is a beauty professional based in ${stylist.location}, specialising in ${stylist.specialty}.`}
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {[
                     { label: "Location", value: stylist.location, icon: "📍" },
-                    { label: "Experience", value: `${stylist.experience} years`, icon: "🎓" },
-                    { label: "Response time", value: stylist.responseTime, icon: "⚡" },
-                    { label: "Languages", value: stylist.experience >= 5 ? "English, Yoruba" : "English", icon: "🌍" },
-                    { label: "Style", value: stylist.tags?.[0] ?? "Versatile", icon: "💫" },
-                    { label: "Availability", value: stylist.available ? "Open now" : "Busy", icon: "🟢" },
+                    { label: "Specialty", value: stylist.specialty, icon: "💫" },
+                    { label: "Experience", value: stylist.experience != null ? `${stylist.experience} years` : "—", icon: "🎓" },
+                    { label: "Services", value: `${stylist.services.length} offered`, icon: "🧰" },
+                    { label: "Availability", value: isAvailable ? "Open now" : "Busy", icon: "🟢" },
+                    { label: "From", value: `₦${stylist.priceFrom.toLocaleString()}`, icon: "💰" },
                   ].map(({ label, value, icon }) => (
                     <div key={label} className="flex items-start gap-3 p-3.5 bg-gray-50 rounded-xl border border-gray-100">
                       <span className="text-lg mt-0.5 shrink-0" aria-hidden="true">{icon}</span>
@@ -444,22 +368,6 @@ export default function StylistDetailPage() {
                     </div>
                   ))}
                 </div>
-
-                {stylist.certifications?.length > 0 && (
-                  <div>
-                    <h2 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">Certifications</h2>
-                    <div className="flex flex-wrap gap-2">
-                      {stylist.certifications.map((cert) => (
-                        <span key={cert} className="inline-flex items-center gap-1.5 text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-100 px-3 py-1.5 rounded-full">
-                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                          </svg>
-                          {cert}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
             )}
 
@@ -467,24 +375,17 @@ export default function StylistDetailPage() {
             {activeTab === "services" && (
               <div id="tabpanel-services" role="tabpanel" aria-labelledby="tab-services">
                 <p className="text-sm text-gray-500 mb-4">
-                  All prices are starting rates. Final price may vary based on hair length, complexity, and products used.
+                  All prices are starting rates. Final price may vary based on complexity and products used.
                 </p>
-                <div className="flex flex-col gap-2">
-                  {stylist.services.map((svc) => (
-                    <ServiceItem key={svc} svc={svc} price={stylist.price} />
-                  ))}
-                </div>
-                <div className="mt-6 p-4 bg-purple-50 rounded-2xl border border-purple-100">
-                  <div className="flex items-start gap-3">
-                    <span className="text-xl shrink-0 mt-0.5" aria-hidden="true">💡</span>
-                    <div>
-                      <p className="text-sm font-semibold text-purple-800 mb-0.5">Custom requests welcome</p>
-                      <p className="text-xs text-purple-600 leading-relaxed">
-                        Have a specific look in mind? Book and include a note with your inspiration — {stylist.name.split(" ")[0]} loves bringing creative visions to life.
-                      </p>
-                    </div>
+                {stylist.services.length > 0 ? (
+                  <div className="flex flex-col gap-2">
+                    {stylist.services.map((svc) => (
+                      <ServiceItem key={svc.id} service={svc} />
+                    ))}
                   </div>
-                </div>
+                ) : (
+                  <p className="text-sm text-gray-400 py-6 text-center">No services listed yet.</p>
+                )}
               </div>
             )}
 
@@ -492,41 +393,30 @@ export default function StylistDetailPage() {
             {activeTab === "portfolio" && (
               <div id="tabpanel-portfolio" role="tabpanel" aria-labelledby="tab-portfolio">
                 <PortfolioGallery stylist={stylist} />
-                <p className="text-xs text-gray-400 text-center mt-2">
-                  Showing recent work by {stylist.name.split(" ")[0]}
-                </p>
               </div>
             )}
 
             {/* Reviews */}
             {activeTab === "reviews" && (
               <div id="tabpanel-reviews" role="tabpanel" aria-labelledby="tab-reviews">
-                {/* Rating summary banner */}
                 <div className="flex items-center gap-5 p-5 bg-linear-to-br from-purple-50 to-pink-50 rounded-2xl border border-purple-100 mb-6">
                   <div className="text-center shrink-0">
                     <div className="text-5xl font-extrabold text-purple-700 leading-none" aria-label={`${avgRating} average rating`}>
-                      {avgRating}
+                      {avgRating.toFixed(1)}
                     </div>
-                    <StarRating rating={Number(avgRating)} size="md" />
-                    <p className="text-xs text-gray-500 mt-1">{stylist.reviewCount} reviews</p>
+                    <StarRating rating={avgRating} size="md" />
+                    <p className="text-xs text-gray-500 mt-1">{reviewCount} reviews</p>
                   </div>
-
                   <div className="flex-1 flex flex-col gap-1.5" aria-label="Rating distribution">
                     {[5, 4, 3, 2, 1].map((star) => {
-                      const pct = star >= Math.floor(stylist.rating)
-                        ? Math.min(100, 70 + (star - Math.floor(stylist.rating)) * 10)
-                        : Math.max(4, 30 - (Math.floor(stylist.rating) - star) * 20);
+                      const pct =
+                        star >= Math.floor(avgRating)
+                          ? Math.min(100, 70 + (star - Math.floor(avgRating)) * 10)
+                          : Math.max(4, 30 - (Math.floor(avgRating) - star) * 20);
                       return (
                         <div key={star} className="flex items-center gap-2">
                           <span className="text-xs text-gray-400 w-3 shrink-0" aria-hidden="true">{star}</span>
-                          <div
-                            className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden"
-                            role="progressbar"
-                            aria-label={`${star} star: ${pct}%`}
-                            aria-valuenow={pct}
-                            aria-valuemin={0}
-                            aria-valuemax={100}
-                          >
+                          <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden" role="progressbar" aria-label={`${star} star: ${pct}%`} aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
                             <div className="h-full bg-yellow-400 rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
                           </div>
                           <span className="text-xs text-gray-400 w-8 text-right shrink-0">{pct}%</span>
@@ -538,7 +428,9 @@ export default function StylistDetailPage() {
 
                 {reviews.length > 0 ? (
                   <div className="flex flex-col gap-3">
-                    {reviews.map((review) => <ReviewCard key={review.id} review={review} />)}
+                    {reviews.map((review) => (
+                      <ReviewCard key={review.id} review={review} />
+                    ))}
                   </div>
                 ) : (
                   <div className="flex flex-col items-center py-12 text-center">
@@ -562,31 +454,23 @@ export default function StylistDetailPage() {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between gap-4">
           <div>
             <p className="text-xs text-gray-400">Starting from</p>
-            <p className="text-xl font-extrabold text-purple-700">₦{stylist.price.toLocaleString()}</p>
+            <p className="text-xl font-extrabold text-purple-700">₦{stylist.priceFrom.toLocaleString()}</p>
           </div>
 
           <div className="flex items-center gap-2 flex-1 max-w-sm justify-end">
-            <Link
-              href={`/gift-service`}
-              className="px-4 py-2.5 text-xs font-semibold text-purple-700 border border-purple-200 rounded-xl hover:bg-purple-50 transition-colors whitespace-nowrap"
-            >
+            <Link href="/gift-service" className="px-4 py-2.5 text-xs font-semibold text-purple-700 border border-purple-200 rounded-xl hover:bg-purple-50 transition-colors whitespace-nowrap">
               Gift this
             </Link>
 
-            {stylist.available ? (
+            {isAvailable ? (
               <Link
-                href={`/booking/${stylist.id}`}
+                href={`/book-appointment?stylistId=${stylist.id}`}
                 className="flex-1 py-2.5 text-sm font-bold text-center rounded-xl shadow-lg bg-purple-600 hover:bg-purple-700 text-white hover:shadow-purple-200 hover:-translate-y-0.5 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-2"
               >
                 Book Appointment
               </Link>
             ) : (
-              <button
-                type="button"
-                disabled
-                className="flex-1 py-2.5 text-sm font-bold text-center rounded-xl bg-gray-200 text-gray-400 cursor-not-allowed"
-                aria-label="This stylist is currently unavailable for booking"
-              >
+              <button type="button" disabled className="flex-1 py-2.5 text-sm font-bold text-center rounded-xl bg-gray-200 text-gray-400 cursor-not-allowed" aria-label="This stylist is currently unavailable for booking">
                 Currently Unavailable
               </button>
             )}
