@@ -37,6 +37,15 @@ async function requireOwnedPackage(packageId: string, stylistId: string) {
   return pkg;
 }
 
+/**
+ * Flatten a package's nested PackageService join rows to a plain service[] so the
+ * shape matches the shared PackageDTO (services: StylistServiceSummary[]).
+ */
+function flattenPackage<T extends { services: { service: unknown }[] }>(pkg: T) {
+  const { services, ...rest } = pkg;
+  return { ...rest, services: services.map((ps) => ps.service) };
+}
+
 export const stylistMeService = {
   // ─── Services ─────────────────────────────────────────────────────────────────
 
@@ -80,7 +89,7 @@ export const stylistMeService = {
     const { page: p, limit: l } = clamp(page, limit);
     const stylist = await requireStylist(userId);
     const { items, total } = await packagesRepository.findManyByStylist({ stylistId: stylist.id, page: p, limit: l });
-    return { items, meta: { page: p, limit: l, total, totalPages: Math.ceil(total / l) } };
+    return { items: items.map(flattenPackage), meta: { page: p, limit: l, total, totalPages: Math.ceil(total / l) } };
   },
 
   async createPackage(userId: string, input: CreatePackageInput) {
@@ -90,7 +99,7 @@ export const stylistMeService = {
     if (services.length !== input.serviceIds.length) {
       throw new AppError("One or more services not found for this stylist", 422, ERROR_CODES.VALIDATION_ERROR);
     }
-    return packagesRepository.create({ stylistId: stylist.id, ...input });
+    return flattenPackage(await packagesRepository.create({ stylistId: stylist.id, ...input }));
   },
 
   async updatePackage(userId: string, packageId: string, input: UpdatePackageInput) {
@@ -104,13 +113,13 @@ export const stylistMeService = {
       }
     }
 
-    return packagesRepository.update(packageId, input);
+    return flattenPackage(await packagesRepository.update(packageId, input));
   },
 
   async deactivatePackage(userId: string, packageId: string) {
     const stylist = await requireStylist(userId);
     await requireOwnedPackage(packageId, stylist.id);
-    return packagesRepository.deactivate(packageId);
+    return flattenPackage(await packagesRepository.deactivate(packageId));
   },
 
   // ─── Profile ──────────────────────────────────────────────────────────────────

@@ -202,6 +202,14 @@ export interface BookingServiceLineItem {
   service: BookingServiceSummary;
 }
 
+/** The customer on a booking. Only exposed to the owner, assigned stylist, or admin. */
+export interface BookingCustomerSummary {
+  id: string;
+  name: string;
+  phone: string | null;
+  address: string | null;
+}
+
 export interface BookingDTO {
   id: string;
   userId: string;
@@ -222,6 +230,7 @@ export interface BookingDTO {
   service: BookingServiceSummary | null;
   stylist: BookingStylistSummary;
   services: BookingServiceLineItem[];
+  user?: BookingCustomerSummary;
 }
 
 /** Role-aware "my bookings" — `view` tells the client whose perspective it is. */

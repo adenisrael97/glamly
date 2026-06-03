@@ -20,6 +20,13 @@ const bookingInclude = {
   package: {
     select: { id: true, name: true, price: true, duration: true },
   },
+  // The customer who booked. Their contact (phone/address) is needed by the
+  // assigned stylist to fulfil the appointment. This DTO is only ever returned
+  // to the booking owner (their own data), the assigned stylist (provider view),
+  // or an admin — never on a public route (CLAUDE.md §10, J2).
+  user: {
+    select: { id: true, name: true, phone: true, address: true },
+  },
   stylist: {
     select: {
       id: true,

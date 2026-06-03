@@ -82,7 +82,33 @@ function ProviderBookingCard({ booking, onComplete }: ProviderBookingCardProps) 
           <p className="font-semibold text-gray-900 truncate">{serviceLabel(booking)}</p>
           <p className="text-sm text-gray-500 mt-0.5">{formatWhen(booking.startTime)}</p>
 
-          {/* Customer info from the booking — the provider view may not include user.name */}
+          {/* Customer contact — visible only to the assigned stylist (provider view). */}
+          {booking.user && (
+            <div className="mt-2 space-y-0.5">
+              <p className="text-sm font-medium text-gray-700">{booking.user.name}</p>
+              {booking.user.phone && (
+                <p className="text-xs text-gray-500">📞 {booking.user.phone}</p>
+              )}
+              {booking.user.address && (
+                <p className="text-xs text-gray-500">📍 {booking.user.address}</p>
+              )}
+            </div>
+          )}
+
+          {/* Services breakdown for multi-service bookings */}
+          {booking.services.length > 1 && (
+            <div className="flex flex-wrap gap-1 mt-2">
+              {booking.services.map((l) => (
+                <span
+                  key={l.id}
+                  className="text-xs bg-purple-50 text-purple-700 border border-purple-100 px-2 py-0.5 rounded-full"
+                >
+                  {l.service.name}
+                </span>
+              ))}
+            </div>
+          )}
+
           <p className="text-xs text-gray-400 mt-1">
             Booking #{booking.id.slice(-6).toUpperCase()}
           </p>
