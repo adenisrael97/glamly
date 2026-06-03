@@ -4,6 +4,7 @@ import "./globals.css";
 import type { ReactNode } from "react";
 import Navbar from "@/components/Layout/Navbar";
 import Footer from "@/components/Layout/Footer";
+import { HideOnDashboard } from "@/components/Layout/HideOnDashboard";
 import { AuthProvider } from "@/context/AuthContext";
 import { InstallPrompt } from "@/components/ui/InstallPrompt";
 import { UpdatePrompt } from "@/components/ui/UpdatePrompt";
@@ -70,9 +71,15 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <AuthProvider>
           {/* PWA banners sit outside the scrollable content */}
           <OfflineBanner />
-          <Navbar />
+          {/* The admin/studio dashboards supply their own chrome — keep the public
+              marketing Navbar/Footer off those route trees. */}
+          <HideOnDashboard>
+            <Navbar />
+          </HideOnDashboard>
           {children}
-          <Footer />
+          <HideOnDashboard>
+            <Footer />
+          </HideOnDashboard>
           <InstallPrompt />
           <UpdatePrompt />
           {/* Registers sw.js; must be a client component */}
