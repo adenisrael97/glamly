@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, startTransition, type ReactNode } from "re
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { DashboardTopbar } from "@/components/dashboard/DashboardTopbar";
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
@@ -160,7 +161,7 @@ function Sidebar({
         )}
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1" aria-label="Stylist studio navigation">
+      <nav className="sidebar-nav flex-1 overflow-y-auto px-3 py-4 space-y-1" aria-label="Stylist studio navigation">
         {NAV_ITEMS.map(({ href, label, icon }) => (
           <NavLink
             key={href}
@@ -298,8 +299,9 @@ export default function StylistLayout({ children }: { children: ReactNode }) {
 
       {/* Main content */}
       <div className="flex-1 md:ml-60 lg:ml-64 flex flex-col min-h-screen">
-        {/* Mobile topbar */}
-        <header className="md:hidden sticky top-0 z-20 bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3">
+        {/* Mobile topbar — fixed (not sticky) so it never scrolls away inside the
+            min-h-screen flex column on mobile browsers. */}
+        <header className="md:hidden fixed top-0 left-0 right-0 z-20 bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3">
           <button
             type="button"
             onClick={() => setMobileOpen(true)}
@@ -312,7 +314,16 @@ export default function StylistLayout({ children }: { children: ReactNode }) {
           <span className="text-base font-bold text-purple-700">Studio</span>
         </header>
 
-        <main className="flex-1 px-4 py-6 md:px-6 lg:px-8">
+        {/* Desktop sticky topbar — breadcrumb + account menu. */}
+        <DashboardTopbar
+          rootLabel="Overview"
+          userName={userName}
+          profileHref="/studio"
+          onLogout={handleLogout}
+        />
+
+        {/* pt-20 clears the fixed mobile header; md:pt-6 restores normal desktop spacing. */}
+        <main className="flex-1 px-4 pt-20 pb-6 md:px-6 md:pt-6 lg:px-8">
           {children}
         </main>
       </div>

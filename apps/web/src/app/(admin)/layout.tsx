@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import useSWR from "swr";
 import { adminApi } from "@/lib/api/admin";
 import { useAuth } from "@/context/AuthContext";
+import { DashboardTopbar } from "@/components/dashboard/DashboardTopbar";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -102,6 +103,15 @@ function LogoutIcon() {
   );
 }
 
+function BellIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+    </svg>
+  );
+}
+
 // ─── Sidebar nav link ─────────────────────────────────────────────────────────
 
 function NavLink({
@@ -171,7 +181,7 @@ function Sidebar({
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1" aria-label="Admin navigation">
+      <nav className="sidebar-nav flex-1 overflow-y-auto px-3 py-4 space-y-1" aria-label="Admin navigation">
         {navItems.map((item) => (
           <NavLink
             key={item.href}
@@ -314,8 +324,9 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
       {/* Main content */}
       <div className="flex-1 md:ml-60 lg:ml-64 flex flex-col min-h-screen">
-        {/* Mobile topbar */}
-        <header className="md:hidden sticky top-0 z-20 bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3">
+        {/* Mobile topbar — fixed (not sticky) so it never scrolls away inside the
+            min-h-screen flex column on mobile browsers. */}
+        <header className="md:hidden fixed top-0 left-0 right-0 z-20 bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3">
           <button
             type="button"
             onClick={() => setMobileOpen(true)}
@@ -328,7 +339,35 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           <span className="text-base font-bold text-purple-700">Glamly Admin</span>
         </header>
 
-        <main className="flex-1 px-4 py-6 md:px-6 lg:px-8">
+        {/* Desktop sticky topbar — breadcrumb + pending-approvals bell + account menu. */}
+        <DashboardTopbar
+          rootLabel="Dashboard"
+          userName={userName}
+          profileHref="/admin/dashboard"
+          onLogout={handleLogout}
+          rightSlot={
+            <Link
+              href="/admin/stylists"
+              aria-label={
+                pendingCount > 0
+                  ? `${pendingCount} stylists pending approval`
+                  : "Stylist approvals"
+              }
+              className="relative rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500"
+            >
+              <BellIcon />
+              {pendingCount > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 inline-flex h-[1.1rem] min-w-[1.1rem] items-center justify-center rounded-full bg-yellow-400 px-1 text-[0.65rem] font-bold leading-none text-yellow-900">
+                  {pendingCount > 99 ? "99+" : pendingCount}
+                </span>
+              )}
+            </Link>
+          }
+        />
+
+        {/* pt-20 clears the fixed mobile header; md:pt-6 restores normal desktop spacing
+            (the desktop topbar above is in-flow/sticky, so no offset is needed there). */}
+        <main className="flex-1 px-4 pt-20 pb-6 md:px-6 md:pt-6 lg:px-8">
           {children}
         </main>
       </div>

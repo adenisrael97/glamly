@@ -68,3 +68,20 @@ body {
 html {
   scroll-behavior: smooth;
 }
+
+/* Thin, subtle scrollbar for the dashboard sidebar nav so overflow is visible
+   without a heavy default scrollbar (admin + stylist studio layouts). */
+.sidebar-nav {
+  scrollbar-width: thin;
+  scrollbar-color: #e5e7eb transparent;
+}
+.sidebar-nav::-webkit-scrollbar {
+  width: 6px;
+}
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background-color: #e5e7eb;
+  border-radius: 9999px;
+}
+.sidebar-nav::-webkit-scrollbar-track {
+  background: transparent;
+}
