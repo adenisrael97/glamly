@@ -10,7 +10,9 @@
  */
 
 const SHELL_CACHE = "glamly-shell-v1";
-const API_CACHE = "glamly-api-v1";
+// Bumped v1→v2 to purge the previous cache, which (before this fix) stored
+// authenticated per-user API responses containing PII (see isPublicCatalogGet).
+const API_CACHE = "glamly-api-v2";
 const SYNC_TAG = "glamly-mutation-sync";
 const DB_NAME = "glamly-sync-queue";
 const DB_STORE = "requests";
@@ -31,6 +33,20 @@ const STATIC_PREFIXES = ["/_next/static/", "/icons/", "/images/"];
 
 // API base — matches both dev (4000) and prod paths
 const API_PATTERN = /\/api\/v1\//;
+
+// Only PUBLIC, non-user-specific catalogue GETs may be cached (stale-while-revalidate).
+// Authenticated/per-user responses (bookings, auth, admin, gift vouchers, /stylists/me…)
+// MUST NOT be cached: they carry PII (customer name/phone/address) and would leak across
+// sessions on a shared device or after logout, and would serve stale data after mutations.
+// (CLAUDE.md §5 caching strategy + §10 PII handling.)
+function isPublicCatalogGet(pathname) {
+  if (pathname.startsWith("/api/v1/stylists/me")) return false; // authenticated storefront mgmt
+  return (
+    pathname.startsWith("/api/v1/stylists") || // list, public profile, availability, reviews
+    pathname.startsWith("/api/v1/services") ||
+    pathname.startsWith("/api/v1/packages")
+  );
+}
 
 // ─── Install: pre-cache app shell ────────────────────────────────────────────
 
@@ -83,9 +99,15 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // --- API GETs: stale-while-revalidate ---
+  // --- API GETs ---
   if (API_PATTERN.test(url.pathname) && request.method === "GET") {
-    event.respondWith(staleWhileRevalidate(request, API_CACHE));
+    // Public catalogue (no Authorization) → stale-while-revalidate for offline browsing.
+    if (isPublicCatalogGet(url.pathname) && !request.headers.has("authorization")) {
+      event.respondWith(staleWhileRevalidate(request, API_CACHE));
+    } else {
+      // Authenticated/per-user GETs are network-only — never cached (PII + freshness).
+      event.respondWith(fetch(request));
+    }
     return;
   }
 
