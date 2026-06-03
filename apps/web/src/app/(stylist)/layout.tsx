@@ -209,10 +209,11 @@ export default function StylistLayout({ children }: { children: ReactNode }) {
   const { user, logout, status } = useAuth();
   const overlayRef = useRef<HTMLDivElement>(null);
 
-  // Redirect if not authenticated or not a stylist.
+  // Redirect if not authenticated or not a stylist. The login route is "/Login"
+  // (the (auth) route group adds no path segment) — "/auth/login" would 404.
   useEffect(() => {
     if (status === "unauthenticated") {
-      router.replace("/auth/login");
+      router.replace("/Login");
     } else if (status === "authenticated" && user?.role !== "stylist") {
       router.replace("/dashboard");
     }
@@ -256,7 +257,7 @@ export default function StylistLayout({ children }: { children: ReactNode }) {
     } catch {
       // ignore
     }
-    router.replace("/auth/login");
+    router.replace("/Login");
   };
 
   const userName = user?.name ?? "Stylist";
