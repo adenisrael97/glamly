@@ -18,10 +18,8 @@ interface ServiceRow {
 }
 
 interface ListResponse {
-  services: ServiceRow[];
-  total: number;
-  page: number;
-  pageSize: number;
+  items: ServiceRow[];
+  meta: { total: number; page: number; limit: number; totalPages: number };
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -170,8 +168,8 @@ export default function AdminServicesPage() {
     { keepPreviousData: true },
   );
 
-  const services = data?.services ?? [];
-  const totalPages = data ? Math.ceil(data.total / data.pageSize) : 1;
+  const services = data?.items ?? [];
+  const totalPages = data?.meta.totalPages ?? 1;
 
   function showToast(message: string, type: "success" | "error") {
     setToast({ message, type, id: Date.now() });
@@ -253,7 +251,7 @@ export default function AdminServicesPage() {
           {/* Pagination */}
           {totalPages > 1 && (
             <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between gap-3">
-              <p className="text-xs text-gray-500">Page {page} of {totalPages}{data ? ` · ${data.total} total` : ""}</p>
+              <p className="text-xs text-gray-500">Page {page} of {totalPages}{data ? ` · ${data.meta.total} total` : ""}</p>
               <div className="flex gap-2">
                 <button
                   type="button"

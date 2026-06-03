@@ -26,18 +26,20 @@ interface AuditLog {
 
 interface StylistDetail {
   id: string;
-  bio: string;
+  bio: string | null;
   specialty: string;
   location: string;
-  experienceYears: number;
+  experience: number | null;
   tags: string[];
   status: string;
   createdAt: string;
+  approvedAt?: string | null;
+  approvedBy?: { id: string; name: string } | null;
   user: {
     id: string;
     name: string;
     email: string;
-    phone?: string;
+    phone?: string | null;
     createdAt: string;
   };
   services: StylistService[];
@@ -49,16 +51,23 @@ type StylistStatus = "APPROVED" | "REJECTED" | "SUSPENDED";
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 const STATUS_STYLES: Record<string, string> = {
-  PENDING: "bg-yellow-100 text-yellow-800",
+  PENDING_APPROVAL: "bg-yellow-100 text-yellow-800",
   APPROVED: "bg-green-100 text-green-800",
   REJECTED: "bg-red-100 text-red-800",
   SUSPENDED: "bg-orange-100 text-orange-800",
 };
 
+const STATUS_LABELS: Record<string, string> = {
+  PENDING_APPROVAL: "Pending",
+  APPROVED: "Approved",
+  REJECTED: "Rejected",
+  SUSPENDED: "Suspended",
+};
+
 function StatusBadge({ status }: { status: string }) {
   return (
     <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${STATUS_STYLES[status] ?? "bg-gray-100 text-gray-700"}`}>
-      {status}
+      {STATUS_LABELS[status] ?? status}
     </span>
   );
 }
@@ -305,7 +314,7 @@ export default function AdminStylistDetailPage() {
             <h2 className="text-sm font-semibold text-gray-700 mb-4">Profile</h2>
             <InfoRow label="Specialty" value={data.specialty} />
             <InfoRow label="Location" value={data.location} />
-            <InfoRow label="Experience" value={data.experienceYears != null ? `${data.experienceYears} yr${data.experienceYears !== 1 ? "s" : ""}` : undefined} />
+            <InfoRow label="Experience" value={data.experience != null ? `${data.experience} yr${data.experience !== 1 ? "s" : ""}` : undefined} />
             {data.bio && (
               <div className="mt-3 pt-3 border-t border-gray-50">
                 <p className="text-xs text-gray-500 font-medium mb-1.5">Bio</p>

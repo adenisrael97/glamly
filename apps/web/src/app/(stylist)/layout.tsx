@@ -2,27 +2,12 @@
 
 import { useState, useEffect, useRef, startTransition, type ReactNode } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import useSWR from "swr";
-import { adminApi } from "@/lib/api/admin";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+// ─── Icons ────────────────────────────────────────────────────────────────────
 
-interface PendingCountData {
-  count: number;
-}
-
-// ─── Nav items ───────────────────────────────────────────────────────────────
-
-interface NavItem {
-  label: string;
-  href: string;
-  icon: ReactNode;
-  badge?: number;
-}
-
-function DashboardIcon() {
+function OverviewIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <rect x="3" y="3" width="7" height="7" />
@@ -33,22 +18,21 @@ function DashboardIcon() {
   );
 }
 
-function StylistsIcon() {
+function ServicesIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-      <circle cx="9" cy="7" r="4" />
-      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+      <circle cx="12" cy="12" r="3" />
+      <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83" />
     </svg>
   );
 }
 
-function UsersIcon() {
+function PackagesIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-      <circle cx="12" cy="7" r="4" />
+      <polyline points="21 8 21 21 3 21 3 8" />
+      <rect x="1" y="3" width="22" height="5" />
+      <line x1="10" y1="12" x2="14" y2="12" />
     </svg>
   );
 }
@@ -64,11 +48,11 @@ function BookingsIcon() {
   );
 }
 
-function ServicesIcon() {
+function AvailabilityIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <circle cx="12" cy="12" r="3" />
-      <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83" />
+      <circle cx="12" cy="12" r="10" />
+      <polyline points="12 6 12 12 16 14" />
     </svg>
   );
 }
@@ -102,20 +86,34 @@ function LogoutIcon() {
   );
 }
 
-// ─── Sidebar nav link ─────────────────────────────────────────────────────────
+// ─── Nav items ────────────────────────────────────────────────────────────────
+
+const NAV_ITEMS = [
+  { label: "Overview", href: "/studio", icon: <OverviewIcon /> },
+  { label: "Services", href: "/studio/services", icon: <ServicesIcon /> },
+  { label: "Packages", href: "/studio/packages", icon: <PackagesIcon /> },
+  { label: "Bookings", href: "/studio/bookings", icon: <BookingsIcon /> },
+  { label: "Availability", href: "/studio/availability", icon: <AvailabilityIcon /> },
+];
+
+// ─── Nav link ─────────────────────────────────────────────────────────────────
 
 function NavLink({
-  item,
+  href,
+  label,
+  icon,
   active,
   onClick,
 }: {
-  item: NavItem;
+  href: string;
+  label: string;
+  icon: ReactNode;
   active: boolean;
   onClick?: () => void;
 }) {
   return (
     <Link
-      href={item.href}
+      href={href}
       onClick={onClick}
       className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-1 ${
         active
@@ -124,27 +122,20 @@ function NavLink({
       }`}
       aria-current={active ? "page" : undefined}
     >
-      <span className="shrink-0">{item.icon}</span>
-      <span className="flex-1">{item.label}</span>
-      {item.badge !== undefined && item.badge > 0 && (
-        <span className="ml-auto inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-yellow-400 text-yellow-900 text-xs font-bold leading-none">
-          {item.badge > 99 ? "99+" : item.badge}
-        </span>
-      )}
+      <span className="shrink-0">{icon}</span>
+      <span>{label}</span>
     </Link>
   );
 }
 
-// ─── Sidebar content ──────────────────────────────────────────────────────────
+// ─── Sidebar ──────────────────────────────────────────────────────────────────
 
 function Sidebar({
-  navItems,
   pathname,
   onClose,
   onLogout,
   userName,
 }: {
-  navItems: NavItem[];
   pathname: string;
   onClose?: () => void;
   onLogout: () => void;
@@ -152,40 +143,46 @@ function Sidebar({
 }) {
   return (
     <div className="flex flex-col h-full">
-      {/* Logo / header */}
       <div className="flex items-center justify-between px-4 py-5 border-b border-gray-100">
         <div>
           <p className="text-lg font-extrabold text-purple-700 tracking-tight">Glamly</p>
-          <p className="text-xs text-gray-400 font-medium">Admin</p>
+          <p className="text-xs text-gray-400 font-medium">Stylist Studio</p>
         </div>
         {onClose && (
           <button
             type="button"
             onClick={onClose}
             className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 md:hidden"
-            aria-label="Close menu"
+            aria-label="Close navigation menu"
           >
             <CloseIcon />
           </button>
         )}
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1" aria-label="Admin navigation">
-        {navItems.map((item) => (
+      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1" aria-label="Stylist studio navigation">
+        {NAV_ITEMS.map(({ href, label, icon }) => (
           <NavLink
-            key={item.href}
-            item={item}
-            active={pathname === item.href || (item.href !== "/admin/dashboard" && pathname.startsWith(item.href))}
+            key={href}
+            href={href}
+            label={label}
+            icon={icon}
+            active={
+              href === "/studio"
+                ? pathname === "/studio"
+                : pathname.startsWith(href)
+            }
             onClick={onClose}
           />
         ))}
       </nav>
 
-      {/* User + logout */}
       <div className="px-3 py-4 border-t border-gray-100">
         <div className="flex items-center gap-2 px-3 py-2 mb-1">
-          <div className="w-8 h-8 rounded-full bg-purple-200 flex items-center justify-center text-purple-700 font-bold text-sm shrink-0">
+          <div
+            className="w-8 h-8 rounded-full bg-purple-200 flex items-center justify-center text-purple-700 font-bold text-sm shrink-0"
+            aria-hidden="true"
+          >
             {userName.charAt(0).toUpperCase()}
           </div>
           <span className="text-sm font-medium text-gray-700 truncate">{userName}</span>
@@ -205,36 +202,31 @@ function Sidebar({
 
 // ─── Layout ───────────────────────────────────────────────────────────────────
 
-export default function AdminLayout({ children }: { children: ReactNode }) {
+export default function StylistLayout({ children }: { children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
-  const { user, logout } = useAuth();
+  const router = useRouter();
+  const { user, logout, status } = useAuth();
   const overlayRef = useRef<HTMLDivElement>(null);
 
-  const { data: pendingData } = useSWR<PendingCountData>(
-    "admin/pending-count",
-    () => adminApi.getPendingCount() as Promise<PendingCountData>,
-    { refreshInterval: 60_000 },
-  );
+  // Redirect if not authenticated or not a stylist.
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.replace("/auth/login");
+    } else if (status === "authenticated" && user?.role !== "stylist") {
+      router.replace("/dashboard");
+    }
+  }, [status, user, router]);
 
-  const pendingCount = pendingData?.count ?? 0;
-
-  const navItems: NavItem[] = [
-    { label: "Dashboard", href: "/admin/dashboard", icon: <DashboardIcon /> },
-    { label: "Stylists", href: "/admin/stylists", icon: <StylistsIcon />, badge: pendingCount },
-    { label: "Users", href: "/admin/users", icon: <UsersIcon /> },
-    { label: "Bookings", href: "/admin/bookings", icon: <BookingsIcon /> },
-    { label: "Services", href: "/admin/services", icon: <ServicesIcon /> },
-  ];
-
-  // Close mobile menu on route change.
+  // Close mobile menu on route change. Use startTransition so the setState
+  // call is not synchronous inside the effect body (react-hooks/set-state-in-effect).
   useEffect(() => {
     startTransition(() => {
       setMobileOpen(false);
     });
   }, [pathname]);
 
-  // Trap focus inside mobile overlay when open.
+  // Focus trap inside mobile drawer.
   useEffect(() => {
     if (!mobileOpen) return;
     const el = overlayRef.current;
@@ -245,9 +237,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     const first = focusable[0];
     const last = focusable[focusable.length - 1];
     function handleKey(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        setMobileOpen(false);
-      }
+      if (e.key === "Escape") setMobileOpen(false);
       if (e.key === "Tab") {
         if (e.shiftKey ? document.activeElement === first : document.activeElement === last) {
           e.preventDefault();
@@ -266,20 +256,16 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     } catch {
       // ignore
     }
+    router.replace("/auth/login");
   };
 
-  const userName = user?.name ?? "Admin";
+  const userName = user?.name ?? "Stylist";
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Desktop sidebar */}
       <aside className="hidden md:flex md:flex-col md:w-60 lg:w-64 bg-white border-r border-gray-200 fixed inset-y-0 left-0 z-30">
-        <Sidebar
-          navItems={navItems}
-          pathname={pathname}
-          onLogout={handleLogout}
-          userName={userName}
-        />
+        <Sidebar pathname={pathname} onLogout={handleLogout} userName={userName} />
       </aside>
 
       {/* Mobile overlay */}
@@ -290,19 +276,16 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           aria-modal="true"
           aria-label="Navigation menu"
         >
-          {/* Backdrop */}
           <div
             className="absolute inset-0 bg-black/40"
             onClick={() => setMobileOpen(false)}
             aria-hidden="true"
           />
-          {/* Drawer */}
           <div
             ref={overlayRef}
             className="relative w-64 max-w-[80vw] bg-white h-full shadow-xl flex flex-col"
           >
             <Sidebar
-              navItems={navItems}
               pathname={pathname}
               onClose={() => setMobileOpen(false)}
               onLogout={handleLogout}
@@ -325,7 +308,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           >
             <HamburgerIcon />
           </button>
-          <span className="text-base font-bold text-purple-700">Glamly Admin</span>
+          <span className="text-base font-bold text-purple-700">Studio</span>
         </header>
 
         <main className="flex-1 px-4 py-6 md:px-6 lg:px-8">

@@ -15,37 +15,42 @@ interface StylistRow {
   location: string;
   status: string;
   createdAt: string;
-  experienceYears?: number;
+  experience?: number;
 }
 
 interface ListResponse {
-  stylists: StylistRow[];
-  total: number;
-  page: number;
-  pageSize: number;
+  items: StylistRow[];
+  meta: { total: number; page: number; limit: number; totalPages: number };
 }
 
-type TabValue = "ALL" | "PENDING" | "APPROVED" | "REJECTED" | "SUSPENDED";
+type TabValue = "ALL" | "PENDING_APPROVAL" | "APPROVED" | "REJECTED" | "SUSPENDED";
 
 const TABS: { label: string; value: TabValue }[] = [
   { label: "All", value: "ALL" },
-  { label: "Pending", value: "PENDING" },
+  { label: "Pending", value: "PENDING_APPROVAL" },
   { label: "Approved", value: "APPROVED" },
   { label: "Rejected", value: "REJECTED" },
   { label: "Suspended", value: "SUSPENDED" },
 ];
 
 const STATUS_STYLES: Record<string, string> = {
-  PENDING: "bg-yellow-100 text-yellow-800",
+  PENDING_APPROVAL: "bg-yellow-100 text-yellow-800",
   APPROVED: "bg-green-100 text-green-800",
   REJECTED: "bg-red-100 text-red-800",
   SUSPENDED: "bg-orange-100 text-orange-800",
 };
 
+const STATUS_LABELS: Record<string, string> = {
+  PENDING_APPROVAL: "Pending",
+  APPROVED: "Approved",
+  REJECTED: "Rejected",
+  SUSPENDED: "Suspended",
+};
+
 function StatusBadge({ status }: { status: string }) {
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${STATUS_STYLES[status] ?? "bg-gray-100 text-gray-700"}`}>
-      {status}
+      {STATUS_LABELS[status] ?? status}
     </span>
   );
 }
@@ -90,8 +95,8 @@ export default function AdminStylistsPage() {
     { keepPreviousData: true },
   );
 
-  const stylists = data?.stylists ?? [];
-  const totalPages = data ? Math.ceil(data.total / data.pageSize) : 1;
+  const stylists = data?.items ?? [];
+  const totalPages = data?.meta.totalPages ?? 1;
 
   function handleTabChange(val: TabValue) {
     setTab(val);
@@ -188,7 +193,7 @@ export default function AdminStylistsPage() {
             <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between gap-3">
               <p className="text-xs text-gray-500">
                 Page {page} of {totalPages}
-                {data ? ` · ${data.total} total` : ""}
+                {data ? ` · ${data.meta.total} total` : ""}
               </p>
               <div className="flex gap-2">
                 <button

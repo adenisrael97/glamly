@@ -3,12 +3,13 @@
 import { Suspense, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import type { AvailabilitySlot, StylistServiceSummary } from "@glamly/shared";
+import type { AvailabilitySlot } from "@glamly/shared";
 import { ApiError, bookingsApi } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useStylist, useAvailability } from "@/hooks/useStylists";
 import { useStylists } from "@/hooks/useStylists";
 import { StylistCardSkeleton } from "@/components/ui/Skeleton";
+import { ServiceSelector } from "@/components/features/booking/ServiceSelector";
 
 const STEPS = ["Service", "Date & Time", "Confirm"];
 
@@ -106,7 +107,11 @@ function BookFlow({ stylistId, initialServiceId }: { stylistId: string; initialS
   const { stylist, isLoading, isError } = useStylist(stylistId);
 
   const [step, setStep] = useState(1);
-  const [serviceId, setServiceId] = useState<string | null>(initialServiceId);
+  // Multi-select service state
+  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>(
+    initialServiceId ? [initialServiceId] : [],
+  );
+  const [selectedPackageId, setSelectedPackageId] = useState<string | undefined>(undefined);
   const [slot, setSlot] = useState<AvailabilitySlot | null>(null);
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -114,14 +119,41 @@ function BookFlow({ stylistId, initialServiceId }: { stylistId: string; initialS
   // Stable idempotency key for this booking attempt (CLAUDE.md §11).
   const [idempotencyKey] = useState(() => (typeof crypto !== "undefined" ? crypto.randomUUID() : `${stylistId}-${Date.now()}`));
 
-  const service: StylistServiceSummary | undefined = useMemo(
-    () => stylist?.services.find((s) => s.id === serviceId),
-    [stylist, serviceId],
+  const hasServiceSelection = selectedServiceIds.length > 0 || !!selectedPackageId;
+
+  // Use the first selected service for availability slot calculation, or any service from the package
+  const primaryServiceId = useMemo(() => {
+    if (selectedServiceIds.length > 0) return selectedServiceIds[0];
+    if (selectedPackageId && stylist) {
+      const pkg = stylist.packages.find((p) => p.id === selectedPackageId);
+      return pkg?.services[0]?.id ?? null;
+    }
+    return null;
+  }, [selectedServiceIds, selectedPackageId, stylist]);
+
+  // Derive selected service objects for the confirm screen
+  const selectedServices = useMemo(
+    () => (stylist?.services ?? []).filter((s) => selectedServiceIds.includes(s.id)),
+    [stylist, selectedServiceIds],
+  );
+  const selectedPackage = useMemo(
+    () => stylist?.packages.find((p) => p.id === selectedPackageId),
+    [stylist, selectedPackageId],
   );
 
+  const totalAmount = useMemo(() => {
+    if (selectedPackage) return selectedPackage.price;
+    return selectedServices.reduce((sum, s) => sum + s.price, 0);
+  }, [selectedPackage, selectedServices]);
+
+  const totalDuration = useMemo(() => {
+    if (selectedPackage) return selectedPackage.duration;
+    return selectedServices.reduce((sum, s) => sum + s.duration, 0);
+  }, [selectedPackage, selectedServices]);
+
   const { slots, isLoading: slotsLoading } = useAvailability(
-    step >= 2 && serviceId ? stylistId : null,
-    { serviceId: serviceId ?? undefined, days: 14 },
+    step >= 2 && hasServiceSelection ? stylistId : null,
+    { serviceId: primaryServiceId ?? undefined, days: 14 },
   );
 
   const slotsByDay = useMemo(() => {
@@ -148,8 +180,8 @@ function BookFlow({ stylistId, initialServiceId }: { stylistId: string; initialS
   }
 
   const goNext = () => {
-    if (step === 1 && !serviceId) {
-      setError("Please select a service");
+    if (step === 1 && !hasServiceSelection) {
+      setError("Please select at least one service or a package");
       return;
     }
     if (step === 2 && !slot) {
@@ -167,21 +199,18 @@ function BookFlow({ stylistId, initialServiceId }: { stylistId: string; initialS
   };
 
   const handleConfirm = async () => {
-    if (!serviceId || !slot) return;
+    if (!hasServiceSelection || !slot) return;
     if (status !== "authenticated" || !user) {
-      router.push(`/Login?next=${encodeURIComponent(`/book-appointment?stylistId=${stylistId}&serviceId=${serviceId}`)}`);
+      router.push(`/Login?next=${encodeURIComponent(`/book-appointment?stylistId=${stylistId}`)}`);
       return;
     }
     setSubmitting(true);
     setError(null);
     try {
-      const booking = await bookingsApi.create({
-        stylistId,
-        serviceIds: [serviceId],
-        startTime: slot.startTime,
-        notes: notes.trim() || undefined,
-        idempotencyKey,
-      });
+      const payload = selectedPackageId
+        ? { stylistId, packageId: selectedPackageId, startTime: slot.startTime, notes: notes.trim() || undefined, idempotencyKey }
+        : { stylistId, serviceIds: selectedServiceIds, startTime: slot.startTime, notes: notes.trim() || undefined, idempotencyKey };
+      const booking = await bookingsApi.create(payload);
       router.push(`/booking/${booking.id}`);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not create the booking. Please try again.");
@@ -213,34 +242,19 @@ function BookFlow({ stylistId, initialServiceId }: { stylistId: string; initialS
 
         {/* STEP 1: Service */}
         {step === 1 && (
-          <section aria-label="Choose a service" className="flex flex-col gap-3">
-            <h2 className="text-base font-semibold text-gray-700">Choose a service</h2>
-            {stylist.services.length === 0 && (
-              <p className="text-sm text-gray-500">This stylist hasn&apos;t listed any services yet.</p>
-            )}
-            {stylist.services.map((svc) => {
-              const selected = svc.id === serviceId;
-              return (
-                <button
-                  key={svc.id}
-                  type="button"
-                  onClick={() => {
-                    setServiceId(svc.id);
-                    setSlot(null);
-                    setError(null);
-                  }}
-                  className={`flex items-center justify-between p-4 rounded-xl border text-left transition-all ${
-                    selected ? "border-purple-500 bg-purple-50 ring-1 ring-purple-300" : "border-gray-200 bg-white hover:border-purple-300"
-                  }`}
-                >
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900">{svc.name}</p>
-                    <p className="text-xs text-gray-400">{svc.duration} min · {svc.category}</p>
-                  </div>
-                  <span className="text-sm font-bold text-purple-700">₦{svc.price.toLocaleString()}</span>
-                </button>
-              );
-            })}
+          <section aria-label="Choose services or a package">
+            <h2 className="text-base font-semibold text-gray-700 mb-4">
+              Choose services
+              <span className="ml-2 text-xs font-normal text-gray-400">Select one or more</span>
+            </h2>
+            <ServiceSelector
+              services={stylist.services}
+              packages={stylist.packages}
+              selectedServiceIds={selectedServiceIds}
+              selectedPackageId={selectedPackageId}
+              onServicesChange={(ids) => { setSelectedServiceIds(ids); setSlot(null); setError(null); }}
+              onPackageChange={(id) => { setSelectedPackageId(id); setSlot(null); setError(null); }}
+            />
           </section>
         )}
 
@@ -283,21 +297,49 @@ function BookFlow({ stylistId, initialServiceId }: { stylistId: string; initialS
         )}
 
         {/* STEP 3: Confirm */}
-        {step === 3 && service && slot && (
+        {step === 3 && hasServiceSelection && slot && (
           <section aria-label="Confirm booking" className="flex flex-col gap-4">
             <h2 className="text-base font-semibold text-gray-700">Confirm your booking</h2>
             <div className="bg-white rounded-2xl border border-gray-200 divide-y divide-gray-100">
+              <div className="flex items-center justify-between px-4 py-3">
+                <span className="text-sm text-gray-500">Stylist</span>
+                <span className="text-sm font-semibold text-gray-900">{stylist.user.name}</span>
+              </div>
+              {selectedPackage ? (
+                <div className="px-4 py-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm text-gray-500">Package</span>
+                    <span className="text-sm font-semibold text-gray-900">{selectedPackage.name}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1 justify-end">
+                    {selectedPackage.services.map((s) => (
+                      <span key={s.id} className="text-xs bg-purple-50 text-purple-600 px-2 py-0.5 rounded-full">{s.name}</span>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="px-4 py-3">
+                  <div className="flex items-start justify-between">
+                    <span className="text-sm text-gray-500">
+                      {selectedServices.length === 1 ? "Service" : "Services"}
+                    </span>
+                    <div className="text-right flex flex-col gap-0.5">
+                      {selectedServices.map((s) => (
+                        <span key={s.id} className="text-sm font-semibold text-gray-900">{s.name}</span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
               {[
-                { label: "Stylist", value: stylist.user.name },
-                { label: "Service", value: service.name },
                 { label: "When", value: `${formatDayLabel(slot.startTime)}, ${formatTimeLabel(slot.startTime)}` },
-                { label: "Duration", value: `${service.duration} min` },
+                { label: "Duration", value: `${totalDuration} min` },
                 { label: "Location", value: stylist.location },
-                { label: "Price", value: `₦${service.price.toLocaleString()}` },
+                { label: "Total", value: `₦${totalAmount.toLocaleString()}` },
               ].map(({ label, value }) => (
                 <div key={label} className="flex items-center justify-between px-4 py-3">
                   <span className="text-sm text-gray-500">{label}</span>
-                  <span className="text-sm font-semibold text-gray-900">{value}</span>
+                  <span className={`text-sm font-semibold ${label === "Total" ? "text-purple-700" : "text-gray-900"}`}>{value}</span>
                 </div>
               ))}
             </div>

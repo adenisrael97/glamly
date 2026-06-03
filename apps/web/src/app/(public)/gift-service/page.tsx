@@ -3,6 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import type { GiftVoucherDTO } from "@glamly/shared";
+import { client, unwrap } from "@/lib/api/client";
+import { ServiceSelector } from "@/components/features/booking/ServiceSelector";
+import { useServices } from "@/hooks/useServices";
 
 const SpinnerIcon = () => (
   <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
@@ -11,38 +15,64 @@ const SpinnerIcon = () => (
   </svg>
 );
 
-const SERVICE_OPTIONS = [
-  "Hair Styling", "Makeup", "Nails", "Lashes", "Braiding",
-  "Barber", "Bridal Package", "Home Service", "Glam Package",
-];
-
 interface GiftFields {
-  senderName: string;
   recipientName: string;
-  phone: string;
-  service: string;
-  date: string;
+  recipientEmail: string;
+  recipientPhone: string;
   message: string;
 }
 
-function validate(fields: GiftFields): Record<string, string> {
+function validate(
+  fields: GiftFields,
+  selectedServiceIds: string[],
+): Record<string, string> {
   const errors: Record<string, string> = {};
-  if (!fields.senderName.trim()) errors.senderName = "Your name is required";
   if (!fields.recipientName.trim()) errors.recipientName = "Recipient name is required";
-  if (!fields.phone.trim()) errors.phone = "Phone number is required";
-  else if (!/^[\d\s\+\-\(\)]{7,15}$/.test(fields.phone)) errors.phone = "Enter a valid phone number";
-  if (!fields.service) errors.service = "Please select a service";
-  if (!fields.date) errors.date = "Please pick a date";
+  if (!fields.recipientEmail.trim()) errors.recipientEmail = "Recipient email is required";
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fields.recipientEmail))
+    errors.recipientEmail = "Enter a valid email address";
+  if (fields.recipientPhone && !/^[\d\s+\-()\\.]{7,20}$/.test(fields.recipientPhone))
+    errors.recipientPhone = "Enter a valid phone number";
+  if (selectedServiceIds.length === 0) errors.services = "Please select at least one service";
   return errors;
 }
 
-function SuccessScreen({ fields }: { fields: GiftFields }) {
-  // Computed once per mount — Math.random() during render is impure and would
-  // regenerate the gift code on every re-render.
-  const [giftCode] = useState(() => `GLAM-${Math.random().toString(36).toUpperCase().slice(2, 8)}`);
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  async function handleCopy() {
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/20 hover:bg-white/30 text-white text-xs font-semibold transition-all"
+    >
+      {copied ? (
+        <>
+          <svg className="w-3.5 h-3.5 text-green-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+          Copied!
+        </>
+      ) : (
+        <>
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          </svg>
+          Copy code
+        </>
+      )}
+    </button>
+  );
+}
+
+function SuccessScreen({ voucher }: { voucher: GiftVoucherDTO }) {
   return (
     <div className="flex flex-col items-center text-center py-8 px-4 max-w-md mx-auto">
-      {/* Animated gift icon */}
+      {/* Icon */}
       <div className="relative mb-6">
         <div className="w-24 h-24 rounded-full bg-linear-to-br from-yellow-400 via-pink-400 to-purple-500 flex items-center justify-center shadow-2xl">
           <span className="text-5xl">🎁</span>
@@ -54,13 +84,13 @@ function SuccessScreen({ fields }: { fields: GiftFields }) {
         </div>
       </div>
 
-      <span className="text-yellow-700 text-xs font-bold tracking-widest uppercase mb-2">Gift Booked!</span>
+      <span className="text-yellow-700 text-xs font-bold tracking-widest uppercase mb-2">Gift Created!</span>
       <h2 className="text-2xl font-bold text-gray-900 mb-2">
-        Beautiful gift, {fields.senderName.split(" ")[0]}!
+        Beautiful gift!
       </h2>
       <p className="text-gray-500 text-sm mb-6 max-w-sm">
-        Your gift of <strong>{fields.service}</strong> for <strong>{fields.recipientName}</strong> on{" "}
-        <strong>{fields.date}</strong> has been confirmed.
+        Your gift voucher for <strong>{voucher.recipientName}</strong> has been created and sent to{" "}
+        <strong>{voucher.recipientEmail}</strong>.
       </p>
 
       {/* Gift voucher card */}
@@ -69,31 +99,39 @@ function SuccessScreen({ fields }: { fields: GiftFields }) {
         <div className="absolute bottom-0 left-0 w-24 h-24 bg-purple-400/10 rounded-full translate-y-1/2 -translate-x-1/2" />
         <div className="relative z-10">
           <div className="flex items-center justify-between mb-4">
-            <span className="text-yellow-400 text-xs font-bold tracking-widest uppercase">GlamHub Gift Voucher</span>
+            <span className="text-yellow-400 text-xs font-bold tracking-widest uppercase">Glamly Gift Voucher</span>
             <span className="text-2xl">✨</span>
           </div>
-          <h3 className="text-white text-xl font-extrabold mb-1">{fields.service}</h3>
-          <p className="text-purple-200 text-xs mb-4">For {fields.recipientName}</p>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap gap-1 mb-2">
+            {voucher.services.map((s) => (
+              <span key={s.id} className="text-xs bg-white/10 text-white px-2 py-0.5 rounded-full">{s.name}</span>
+            ))}
+          </div>
+          <p className="text-purple-200 text-xs mb-4">For {voucher.recipientName}</p>
+          <div className="flex items-center justify-between mb-3">
             <div>
-              <p className="text-purple-300 text-xs">Gift date</p>
-              <p className="text-white font-semibold text-sm">{fields.date}</p>
+              <p className="text-purple-300 text-xs">Total value</p>
+              <p className="text-white font-bold text-lg">₦{voucher.totalAmount.toLocaleString()}</p>
             </div>
             <div className="text-right">
-              <p className="text-purple-300 text-xs">Voucher code</p>
-              <p className="text-yellow-400 font-mono font-bold text-base">{giftCode}</p>
+              <p className="text-purple-300 text-xs mb-1">Voucher code</p>
+              <p className="text-yellow-400 font-mono font-bold text-base">{voucher.code}</p>
             </div>
           </div>
-          {fields.message && (
+          <div className="flex justify-end">
+            <CopyButton text={voucher.code} />
+          </div>
+          {voucher.message && (
             <div className="mt-4 pt-4 border-t border-white/20">
-              <p className="text-purple-200 text-xs italic">&ldquo;{fields.message}&rdquo;</p>
+              <p className="text-purple-200 text-xs italic">&ldquo;{voucher.message}&rdquo;</p>
             </div>
           )}
         </div>
       </div>
 
       <p className="text-gray-400 text-xs mb-6">
-        A confirmation and the gift voucher have been sent to your phone. Share the voucher code with {fields.recipientName}.
+        The voucher has been emailed to {voucher.recipientEmail}. Share the code above with {voucher.recipientName}.
+        Expires: {new Date(voucher.expiresAt).toLocaleDateString("en-NG", { year: "numeric", month: "long", day: "numeric" })}.
       </p>
 
       <div className="flex flex-col sm:flex-row gap-3 w-full">
@@ -116,36 +154,55 @@ function SuccessScreen({ fields }: { fields: GiftFields }) {
 }
 
 export default function GiftServicePage() {
-  const [success, setSuccess] = useState(false);
+  const [voucher, setVoucher] = useState<GiftVoucherDTO | null>(null);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [apiError, setApiError] = useState<string | null>(null);
   const [fields, setFields] = useState<GiftFields>({
-    senderName: "",
     recipientName: "",
-    phone: "",
-    service: "",
-    date: "",
+    recipientEmail: "",
+    recipientPhone: "",
     message: "",
   });
+  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
 
-  const today = new Date().toISOString().split("T")[0];
+  // Fetch real services from API
+  const { services, isLoading: servicesLoading } = useServices({ limit: 50 });
 
   const set =
-    (key: keyof GiftFields) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    (key: keyof GiftFields) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       setFields((prev) => ({ ...prev, [key]: e.target.value }));
       setErrors((prev) => ({ ...prev, [key]: "" }));
     };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const errs = validate(fields);
-    if (Object.keys(errs).length) { setErrors(errs); return; }
+    const errs = validate(fields, selectedServiceIds);
+    if (Object.keys(errs).length) {
+      setErrors(errs);
+      return;
+    }
     setErrors({});
+    setApiError(null);
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 1800));
-    setLoading(false);
-    setSuccess(true);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    try {
+      const result = await unwrap<GiftVoucherDTO>(
+        client.post("/gift-vouchers", {
+          serviceIds: selectedServiceIds,
+          recipientName: fields.recipientName.trim(),
+          recipientEmail: fields.recipientEmail.trim(),
+          recipientPhone: fields.recipientPhone.trim() || undefined,
+          message: fields.message.trim() || undefined,
+        }),
+      );
+      setVoucher(result);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (err) {
+      setApiError(err instanceof Error ? err.message : "Could not create gift voucher. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const inputClass = (field: string) =>
@@ -153,10 +210,10 @@ export default function GiftServicePage() {
       errors[field] ? "border-red-400 bg-red-50" : "border-gray-200 hover:border-purple-300 bg-white"
     }`;
 
-  if (success) {
+  if (voucher) {
     return (
       <main className="min-h-screen bg-linear-to-br from-purple-50 via-white to-pink-50 py-16 px-4">
-        <SuccessScreen fields={fields} />
+        <SuccessScreen voucher={voucher} />
       </main>
     );
   }
@@ -176,7 +233,8 @@ export default function GiftServicePage() {
             Give the Gift of Glam
           </h1>
           <p className="text-purple-200 text-base max-w-xl mx-auto">
-            Treat someone special to a professional beauty service. Choose a service, pick a date, and we&apos;ll send them a beautiful gift voucher.
+            Treat someone special to a professional beauty service. Choose services, fill in their details,
+            and we&apos;ll send them a beautiful gift voucher.
           </p>
         </div>
       </div>
@@ -194,117 +252,120 @@ export default function GiftServicePage() {
                 </div>
                 <div>
                   <h2 className="text-lg font-bold text-gray-900">Gift Details</h2>
-                  <p className="text-gray-500 text-xs">All fields marked * are required</p>
+                  <p className="text-gray-500 text-xs">Fields marked * are required</p>
                 </div>
               </div>
 
-              <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
-                {/* Your name */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-gray-700">
-                    Your name <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={fields.senderName}
-                    onChange={set("senderName")}
-                    placeholder="Your full name"
-                    className={inputClass("senderName")}
-                  />
-                  {errors.senderName && <p className="text-xs text-red-500">{errors.senderName}</p>}
-                </div>
+              <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-6">
+                {/* API error */}
+                {apiError && (
+                  <div role="alert" className="px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
+                    {apiError}
+                  </div>
+                )}
 
                 {/* Recipient name */}
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-gray-700">
+                  <label htmlFor="recipientName" className="text-sm font-medium text-gray-700">
                     Recipient&apos;s name <span className="text-red-500">*</span>
                   </label>
                   <input
+                    id="recipientName"
                     type="text"
                     value={fields.recipientName}
                     onChange={set("recipientName")}
-                    placeholder="Who is the gift for?"
+                    placeholder="Who is this gift for?"
                     className={inputClass("recipientName")}
                   />
                   {errors.recipientName && <p className="text-xs text-red-500">{errors.recipientName}</p>}
                 </div>
 
-                {/* Phone */}
+                {/* Recipient email */}
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-gray-700">
-                    Your phone number <span className="text-red-500">*</span>
+                  <label htmlFor="recipientEmail" className="text-sm font-medium text-gray-700">
+                    Recipient&apos;s email <span className="text-red-500">*</span>
                   </label>
                   <input
+                    id="recipientEmail"
+                    type="email"
+                    value={fields.recipientEmail}
+                    onChange={set("recipientEmail")}
+                    placeholder="they@example.com"
+                    className={inputClass("recipientEmail")}
+                  />
+                  {errors.recipientEmail && <p className="text-xs text-red-500">{errors.recipientEmail}</p>}
+                </div>
+
+                {/* Recipient phone */}
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="recipientPhone" className="text-sm font-medium text-gray-700">
+                    Recipient&apos;s phone{" "}
+                    <span className="text-gray-400 font-normal">(optional)</span>
+                  </label>
+                  <input
+                    id="recipientPhone"
                     type="tel"
-                    value={fields.phone}
-                    onChange={set("phone")}
+                    value={fields.recipientPhone}
+                    onChange={set("recipientPhone")}
                     placeholder="+234 800 000 0000"
-                    className={inputClass("phone")}
+                    className={inputClass("recipientPhone")}
                   />
-                  {errors.phone && <p className="text-xs text-red-500">{errors.phone}</p>}
+                  {errors.recipientPhone && <p className="text-xs text-red-500">{errors.recipientPhone}</p>}
                 </div>
 
-                {/* Service type */}
+                {/* Service selector */}
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-gray-700">
-                    Service type <span className="text-red-500">*</span>
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {SERVICE_OPTIONS.map((svc) => {
-                      const selected = fields.service === svc;
-                      return (
-                        <button
-                          key={svc}
-                          type="button"
-                          onClick={() => {
-                            setFields((prev) => ({ ...prev, service: svc }));
-                            setErrors((prev) => ({ ...prev, service: "" }));
-                          }}
-                          className={`px-4 py-2 rounded-xl text-sm font-medium border transition-all duration-200 ${
-                            selected
-                              ? "bg-purple-600 text-white border-purple-600 shadow-sm"
-                              : "bg-white text-gray-700 border-gray-200 hover:border-purple-400 hover:text-purple-700"
-                          }`}
-                        >
-                          {selected && <span className="mr-1.5">✓</span>}
-                          {svc}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {errors.service && <p className="text-xs text-red-500">{errors.service}</p>}
-                </div>
-
-                {/* Date */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-gray-700">
-                    Preferred date <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="date"
-                    value={fields.date}
-                    min={today}
-                    onChange={set("date")}
-                    className={inputClass("date")}
-                  />
-                  {errors.date && <p className="text-xs text-red-500">{errors.date}</p>}
+                  <p className="text-sm font-medium text-gray-700">
+                    Services to gift <span className="text-red-500">*</span>
+                  </p>
+                  {servicesLoading ? (
+                    <div className="flex flex-col gap-2">
+                      {[1, 2, 3].map((i) => (
+                        <div key={i} className="h-16 bg-gray-100 animate-pulse rounded-xl" />
+                      ))}
+                    </div>
+                  ) : services.length > 0 ? (
+                    <ServiceSelector
+                      services={services.map((s) => ({
+                        id: s.id,
+                        name: s.name,
+                        category: s.category,
+                        description: s.description,
+                        price: s.price,
+                        duration: s.duration,
+                        imageUrl: s.imageUrl,
+                      }))}
+                      packages={[]}
+                      selectedServiceIds={selectedServiceIds}
+                      selectedPackageId={undefined}
+                      onServicesChange={(ids) => {
+                        setSelectedServiceIds(ids);
+                        setErrors((prev) => ({ ...prev, services: "" }));
+                      }}
+                      onPackageChange={() => undefined}
+                    />
+                  ) : (
+                    <p className="text-sm text-gray-400">No services available at the moment.</p>
+                  )}
+                  {errors.services && <p className="text-xs text-red-500">{errors.services}</p>}
                 </div>
 
                 {/* Message */}
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-gray-700">
+                  <label htmlFor="giftMessage" className="text-sm font-medium text-gray-700">
                     Personal message{" "}
                     <span className="text-gray-400 font-normal">(optional)</span>
                   </label>
                   <textarea
+                    id="giftMessage"
                     value={fields.message}
                     onChange={set("message")}
                     rows={3}
-                    maxLength={200}
+                    maxLength={500}
                     placeholder="Write a heartfelt message to include with the gift…"
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-800 placeholder:text-gray-400 resize-none bg-white focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent hover:border-purple-300 transition-all"
                   />
-                  <span className="text-xs text-gray-400 text-right">{fields.message.length}/200</span>
+                  <span className="text-xs text-gray-400 text-right">{fields.message.length}/500</span>
                 </div>
 
                 {/* Submit */}
@@ -314,7 +375,7 @@ export default function GiftServicePage() {
                   className="w-full py-4 bg-linear-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all duration-200 flex items-center justify-center gap-2 text-sm shadow-lg hover:shadow-xl hover:-translate-y-0.5"
                 >
                   {loading && <SpinnerIcon />}
-                  {loading ? "Sending gift…" : "🎁 Send the Gift"}
+                  {loading ? "Creating voucher…" : "🎁 Send the Gift"}
                 </button>
               </form>
             </div>
@@ -327,10 +388,10 @@ export default function GiftServicePage() {
               <h3 className="font-bold text-gray-900 mb-4 text-sm uppercase tracking-wide">How It Works</h3>
               <div className="flex flex-col gap-4">
                 {[
-                  { n: "1", icon: "✍️", title: "Fill the form", desc: "Tell us about the recipient and service" },
-                  { n: "2", icon: "🎨", title: "We create the voucher", desc: "A beautiful digital gift card is generated" },
-                  { n: "3", icon: "📱", title: "Share & redeem", desc: "Send the voucher code to your loved one" },
-                  { n: "4", icon: "✨", title: "They enjoy the service", desc: "Booked with any available stylist" },
+                  { icon: "✍️", title: "Fill the form", desc: "Tell us about the recipient and pick services" },
+                  { icon: "🎨", title: "We create the voucher", desc: "A beautiful digital gift card is generated" },
+                  { icon: "📱", title: "Email delivery", desc: "The voucher is emailed to the recipient instantly" },
+                  { icon: "✨", title: "They enjoy the service", desc: "Redeemable with any available stylist" },
                 ].map(({ icon, title, desc }) => (
                   <div key={title} className="flex items-start gap-3">
                     <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center text-base shrink-0">

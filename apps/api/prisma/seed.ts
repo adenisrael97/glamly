@@ -214,7 +214,14 @@ async function main() {
 
     const stylist = await prisma.stylist.upsert({
       where: { userId: user.id },
-      update: {},
+      // Re-seed must reconcile approval state on pre-existing rows; an empty
+      // update would leave them at the schema default (PENDING_APPROVAL).
+      update: {
+        status: s.status,
+        isVerified: isApproved,
+        approvedAt: isApproved ? new Date() : null,
+        approvedById: isApproved ? adminUser.id : null,
+      },
       create: {
         userId: user.id,
         bio: `${s.name} is a professional ${s.specialty.toLowerCase()} artist based in ${s.location}, Lagos, with ${s.experience} years of experience.`,

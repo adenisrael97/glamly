@@ -19,3 +19,5 @@ export { bookingsApi } from "./bookings";
 export type { ListBookingsParams } from "./bookings";
 export { paymentsApi } from "./payments";
 export { reviewsApi } from "./reviews";
+export { stylistMeApi } from "./stylist-me";
+export type { CreateServiceInput, UpdateServiceInput, CreatePackageInput, UpdatePackageInput, UpdateProfileInput } from "./stylist-me";

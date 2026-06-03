@@ -36,10 +36,24 @@ export default function BookingCard({ booking, perspective = "customer", actions
   const body = (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow p-5">
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
+          {/* Show primary service name or first of multiple */}
           <h3 className="font-semibold text-gray-900 truncate">
-            {booking.service?.name ?? booking.services?.[0]?.service?.name ?? "Multiple services"}
+            {booking.service?.name ?? booking.services?.[0]?.service?.name ?? "Booking"}
           </h3>
+          {/* If multiple services, list them as small tags */}
+          {booking.services && booking.services.length > 1 && (
+            <div className="flex flex-wrap gap-1 mt-1">
+              {booking.services.map((line) => (
+                <span
+                  key={line.id}
+                  className="text-xs bg-purple-50 text-purple-700 border border-purple-100 px-2 py-0.5 rounded-full"
+                >
+                  {line.service.name}
+                </span>
+              ))}
+            </div>
+          )}
           <p className="text-sm text-gray-500 mt-0.5">
             {perspective === "customer"
               ? `with ${booking.stylist.user.name}`

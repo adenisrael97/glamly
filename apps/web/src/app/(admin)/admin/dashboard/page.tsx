@@ -7,22 +7,22 @@ import { Skeleton } from "@/components/ui/Skeleton";
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 interface RevenueMonth {
-  month: string; // e.g. "2024-01"
+  year: number;
+  month: number; // 1-12
   revenue: number;
 }
 
 interface TopStylist {
-  id: string;
+  stylistId: string;
   name: string;
   bookings: number;
   revenue: number;
-  rating?: number;
 }
 
 interface RecentBooking {
   id: string;
   user: { name: string };
-  stylist: { name: string };
+  stylist: { specialty: string; user: { name: string } };
   totalAmount: number;
   status: string;
   createdAt: string;
@@ -122,11 +122,11 @@ function RevenueChart({ data }: { data: RevenueMonth[] }) {
     y: paddingTop + innerHeight - innerHeight * t,
   }));
 
-  function shortMonth(month: string) {
+  function shortMonth(year: number, month: number) {
     try {
-      return new Date(`${month}-01`).toLocaleDateString("en-NG", { month: "short" });
+      return new Date(year, month - 1, 1).toLocaleDateString("en-NG", { month: "short" });
     } catch {
-      return month;
+      return String(month);
     }
   }
 
@@ -169,7 +169,7 @@ function RevenueChart({ data }: { data: RevenueMonth[] }) {
           const y = paddingTop + innerHeight - barH;
 
           return (
-            <g key={d.month}>
+            <g key={`${d.year}-${d.month}`}>
               <rect
                 x={x}
                 y={y}
@@ -179,7 +179,7 @@ function RevenueChart({ data }: { data: RevenueMonth[] }) {
                 fill="#7c3aed"
                 opacity="0.85"
               >
-                <title>{`${shortMonth(d.month)}: ${formatNaira(d.revenue)}`}</title>
+                <title>{`${shortMonth(d.year, d.month)}: ${formatNaira(d.revenue)}`}</title>
               </rect>
               <text
                 x={x + barWidth / 2}
@@ -188,7 +188,7 @@ function RevenueChart({ data }: { data: RevenueMonth[] }) {
                 fontSize="10"
                 fill="#6b7280"
               >
-                {shortMonth(d.month)}
+                {shortMonth(d.year, d.month)}
               </text>
             </g>
           );
@@ -269,7 +269,7 @@ export default function AdminDashboardPage() {
                 </thead>
                 <tbody>
                   {(data?.topStylists ?? []).map((s, i) => (
-                    <tr key={s.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                    <tr key={s.stylistId} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
                       <td className="px-5 py-3 text-gray-400">{i + 1}</td>
                       <td className="px-5 py-3 font-medium text-gray-900">{s.name}</td>
                       <td className="px-5 py-3 text-right text-gray-600">{s.bookings}</td>
@@ -317,7 +317,7 @@ export default function AdminDashboardPage() {
                   {(data?.recentBookings ?? []).slice(0, 10).map((b) => (
                     <tr key={b.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
                       <td className="px-5 py-3 text-gray-900 max-w-[8rem] truncate">{b.user.name}</td>
-                      <td className="px-5 py-3 text-gray-600 max-w-[8rem] truncate">{b.stylist.name}</td>
+                      <td className="px-5 py-3 text-gray-600 max-w-[8rem] truncate">{b.stylist.user.name}</td>
                       <td className="px-5 py-3 text-right text-purple-700 font-semibold">{formatNaira(b.totalAmount)}</td>
                       <td className="px-5 py-3"><StatusBadge status={b.status} /></td>
                       <td className="px-5 py-3 text-gray-500 whitespace-nowrap">{formatDate(b.createdAt)}</td>

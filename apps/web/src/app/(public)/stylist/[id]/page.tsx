@@ -93,6 +93,35 @@ function ServiceItem({ service }: { service: StylistServiceSummary }) {
   );
 }
 
+function PackageItem({ pkg }: { pkg: import("@glamly/shared").PackageDTO }) {
+  return (
+    <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 hover:border-purple-200 hover:bg-purple-50/40 transition-all duration-200">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <p className="text-sm font-bold text-gray-900">{pkg.name}</p>
+            <span className="text-xs bg-yellow-100 text-yellow-700 border border-yellow-200 px-2 py-0.5 rounded-full font-semibold shrink-0">
+              Package
+            </span>
+          </div>
+          {pkg.description && (
+            <p className="text-xs text-gray-500 mb-2">{pkg.description}</p>
+          )}
+          <div className="flex flex-wrap gap-1">
+            {pkg.services.map((s) => (
+              <span key={s.id} className="text-xs bg-white text-gray-600 border border-gray-200 px-2 py-0.5 rounded-full">
+                {s.name}
+              </span>
+            ))}
+          </div>
+          <p className="text-xs text-gray-400 mt-1.5">{pkg.duration} min total</p>
+        </div>
+        <span className="text-base font-extrabold text-purple-700 shrink-0">₦{pkg.price.toLocaleString()}</span>
+      </div>
+    </div>
+  );
+}
+
 // ── Skeleton ──────────────────────────────────────────────────────────────────
 
 function DetailSkeleton() {
@@ -378,13 +407,28 @@ export default function StylistDetailPage() {
                   All prices are starting rates. Final price may vary based on complexity and products used.
                 </p>
                 {stylist.services.length > 0 ? (
-                  <div className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-2 mb-6">
                     {stylist.services.map((svc) => (
                       <ServiceItem key={svc.id} service={svc} />
                     ))}
                   </div>
                 ) : (
                   <p className="text-sm text-gray-400 py-6 text-center">No services listed yet.</p>
+                )}
+
+                {/* Packages section */}
+                {stylist.packages.filter((p) => p.isActive).length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide">Packages</h3>
+                      <span className="text-xs text-gray-400">— bundled services at a special rate</span>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      {stylist.packages.filter((p) => p.isActive).map((pkg) => (
+                        <PackageItem key={pkg.id} pkg={pkg} />
+                      ))}
+                    </div>
+                  </div>
                 )}
               </div>
             )}

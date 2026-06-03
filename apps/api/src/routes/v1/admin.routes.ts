@@ -15,6 +15,13 @@ import { z } from "zod";
 
 const router = Router();
 
+// Admin data is sensitive and changes constantly — never let a browser or proxy
+// serve a cached/etag-revalidated copy (stale approval counts, analytics, etc.).
+router.use((_req, res, next) => {
+  res.set("Cache-Control", "no-store");
+  next();
+});
+
 // All admin routes require authentication + ADMIN role.
 router.use(authenticate, requireRole("ADMIN"));
 

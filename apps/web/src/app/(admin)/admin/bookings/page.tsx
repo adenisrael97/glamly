@@ -7,28 +7,37 @@ import { Skeleton } from "@/components/ui/Skeleton";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-interface BookingService {
-  name: string;
+interface BookingServiceLine {
+  id: string;
+  serviceId: string;
   price: number;
+  service: { name: string; category: string };
 }
 
 interface BookingRow {
   id: string;
   user: { name: string; email: string };
-  stylist: { name: string };
-  services: BookingService[];
+  stylist: { specialty: string; location: string; user: { name: string } };
+  service: { name: string } | null;
+  services: BookingServiceLine[];
   totalAmount: number;
   status: string;
   createdAt: string;
-  scheduledAt?: string;
+  startTime?: string;
   notes?: string;
 }
 
 interface ListResponse {
-  bookings: BookingRow[];
-  total: number;
-  page: number;
-  pageSize: number;
+  items: BookingRow[];
+  meta: { total: number; page: number; limit: number; totalPages: number };
+}
+
+/** Human service summary from line items, falling back to legacy single service. */
+function serviceSummary(b: BookingRow): string {
+  if (b.services && b.services.length > 0) {
+    return b.services.map((s) => s.service.name).join(", ");
+  }
+  return b.service?.name ?? "—";
 }
 
 type StatusFilter = "ALL" | "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED";
@@ -96,19 +105,21 @@ function BookingDetail({ booking }: { booking: BookingRow }) {
       </div>
       <div>
         <p className="text-xs font-medium text-gray-500 mb-1">Scheduled</p>
-        <p className="text-gray-900">{booking.scheduledAt ? formatDateTime(booking.scheduledAt) : "—"}</p>
+        <p className="text-gray-900">{booking.startTime ? formatDateTime(booking.startTime) : "—"}</p>
       </div>
       <div>
         <p className="text-xs font-medium text-gray-500 mb-1">Services</p>
         {booking.services && booking.services.length > 0 ? (
           <ul className="space-y-0.5">
-            {booking.services.map((s, i) => (
-              <li key={i} className="flex justify-between text-gray-700">
-                <span>{s.name}</span>
+            {booking.services.map((s) => (
+              <li key={s.id} className="flex justify-between text-gray-700">
+                <span>{s.service.name}</span>
                 <span className="text-purple-700 font-medium ml-2">{formatNaira(s.price)}</span>
               </li>
             ))}
           </ul>
+        ) : booking.service ? (
+          <p className="text-gray-700">{booking.service.name}</p>
         ) : (
           <p className="text-gray-400">—</p>
         )}
@@ -161,8 +172,8 @@ export default function AdminBookingsPage() {
     { keepPreviousData: true },
   );
 
-  const bookings = data?.bookings ?? [];
-  const totalPages = data ? Math.ceil(data.total / data.pageSize) : 1;
+  const bookings = data?.items ?? [];
+  const totalPages = data?.meta.totalPages ?? 1;
 
   function handleFilterChange(val: StatusFilter) {
     setStatusFilter(val);
@@ -228,7 +239,7 @@ export default function AdminBookingsPage() {
                 ) : (
                   bookings.map((b) => {
                     const isExpanded = expandedId === b.id;
-                    const serviceNames = b.services?.map((s) => s.name).join(", ") || "—";
+                    const serviceNames = serviceSummary(b);
                     return (
                       <Fragment key={b.id}>
                         <tr
@@ -236,7 +247,7 @@ export default function AdminBookingsPage() {
                         >
                           <td className="px-5 py-3 font-mono text-xs text-gray-500">{truncateId(b.id)}</td>
                           <td className="px-5 py-3 text-gray-900 max-w-[8rem] truncate">{b.user.name}</td>
-                          <td className="px-5 py-3 text-gray-600 max-w-[8rem] truncate">{b.stylist.name}</td>
+                          <td className="px-5 py-3 text-gray-600 max-w-[8rem] truncate">{b.stylist.user.name}</td>
                           <td className="px-5 py-3 text-gray-500 max-w-[10rem] truncate" title={serviceNames}>
                             {serviceNames}
                           </td>
@@ -279,7 +290,7 @@ export default function AdminBookingsPage() {
           {/* Pagination */}
           {totalPages > 1 && (
             <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between gap-3">
-              <p className="text-xs text-gray-500">Page {page} of {totalPages}{data ? ` · ${data.total} total` : ""}</p>
+              <p className="text-xs text-gray-500">Page {page} of {totalPages}{data ? ` · ${data.meta.total} total` : ""}</p>
               <div className="flex gap-2">
                 <button
                   type="button"

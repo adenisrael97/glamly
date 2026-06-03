@@ -12,16 +12,14 @@ interface UserRow {
   name: string;
   email: string;
   role: string;
-  status?: string;
+  deletedAt?: string | null;
   createdAt: string;
   _count?: { bookings: number };
 }
 
 interface ListResponse {
-  users: UserRow[];
-  total: number;
-  page: number;
-  pageSize: number;
+  items: UserRow[];
+  meta: { total: number; page: number; limit: number; totalPages: number };
 }
 
 type ModalAction =
@@ -31,30 +29,25 @@ type ModalAction =
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 const ROLE_STYLES: Record<string, string> = {
-  admin: "bg-purple-100 text-purple-800",
-  stylist: "bg-blue-100 text-blue-800",
-  user: "bg-gray-100 text-gray-700",
+  ADMIN: "bg-purple-100 text-purple-800",
+  STYLIST: "bg-blue-100 text-blue-800",
+  USER: "bg-gray-100 text-gray-700",
 };
 
-const STATUS_STYLES: Record<string, string> = {
-  active: "bg-green-100 text-green-800",
-  suspended: "bg-orange-100 text-orange-800",
-  deleted: "bg-red-100 text-red-800",
-};
 
 function RoleBadge({ role }: { role: string }) {
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold capitalize ${ROLE_STYLES[role] ?? "bg-gray-100 text-gray-700"}`}>
-      {role}
+      {role.toLowerCase()}
     </span>
   );
 }
 
-function StatusBadge({ status }: { status?: string }) {
-  const s = (status ?? "active").toLowerCase();
+function StatusBadge({ deletedAt }: { deletedAt?: string | null }) {
+  const active = !deletedAt;
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold capitalize ${STATUS_STYLES[s] ?? "bg-gray-100 text-gray-700"}`}>
-      {s}
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${active ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
+      {active ? "Active" : "Deleted"}
     </span>
   );
 }
@@ -92,7 +85,7 @@ function Toast({ toast, onDismiss }: { toast: ToastState; onDismiss: () => void 
 
 // ─── Modal ────────────────────────────────────────────────────────────────────
 
-const ROLE_OPTIONS = ["user", "stylist", "admin"];
+const ROLE_OPTIONS = ["USER", "STYLIST", "ADMIN"];
 
 function ActionModal({
   action,
@@ -153,7 +146,7 @@ function ActionModal({
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
             >
               {ROLE_OPTIONS.map((r) => (
-                <option key={r} value={r} className="capitalize">{r}</option>
+                <option key={r} value={r}>{r.charAt(0) + r.slice(1).toLowerCase()}</option>
               ))}
             </select>
           </div>
@@ -234,8 +227,8 @@ export default function AdminUsersPage() {
     { keepPreviousData: true },
   );
 
-  const users = data?.users ?? [];
-  const totalPages = data ? Math.ceil(data.total / data.pageSize) : 1;
+  const users = data?.items ?? [];
+  const totalPages = data?.meta.totalPages ?? 1;
 
   function showToast(message: string, type: "success" | "error") {
     setToast({ message, type, id: Date.now() });
@@ -327,7 +320,7 @@ export default function AdminUsersPage() {
                       <td className="px-5 py-3 font-medium text-gray-900">{u.name}</td>
                       <td className="px-5 py-3 text-gray-500 max-w-[12rem] truncate">{u.email}</td>
                       <td className="px-5 py-3"><RoleBadge role={u.role} /></td>
-                      <td className="px-5 py-3"><StatusBadge status={u.status} /></td>
+                      <td className="px-5 py-3"><StatusBadge deletedAt={u.deletedAt} /></td>
                       <td className="px-5 py-3 text-gray-500 whitespace-nowrap">{formatDate(u.createdAt)}</td>
                       <td className="px-5 py-3 text-right text-gray-600">{u._count?.bookings ?? 0}</td>
                       <td className="px-5 py-3">
@@ -360,7 +353,7 @@ export default function AdminUsersPage() {
           {/* Pagination */}
           {totalPages > 1 && (
             <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between gap-3">
-              <p className="text-xs text-gray-500">Page {page} of {totalPages}{data ? ` · ${data.total} total` : ""}</p>
+              <p className="text-xs text-gray-500">Page {page} of {totalPages}{data ? ` · ${data.meta.total} total` : ""}</p>
               <div className="flex gap-2">
                 <button
                   type="button"
