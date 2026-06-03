@@ -26,7 +26,7 @@ export const paymentsController = {
    * Paystack webhook. Unauthenticated by design — trust comes from the HMAC
    * signature over the RAW body (captured by express.json's `verify` hook in
    * server.ts), not a JWT. Always acknowledge with 200 once the signature is
-   * valid so Paystack stops retrying; a bad signature throws and surfaces as 401.
+   * valid so Paystack stops retrying; a bad signature throws and surfaces as 400.
    */
   webhook: asyncHandler(async (req: Request, res: Response) => {
     const signature = req.headers["x-paystack-signature"] as string | undefined;

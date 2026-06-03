@@ -375,15 +375,22 @@ export const adminRepository = {
       take: 5,
     });
 
-    const topServiceDetails = await Promise.all(
-      topServices.map(async (ts) => {
-        const svc = await prisma.service.findUnique({
-          where: { id: ts.serviceId },
-          select: { id: true, name: true, category: true },
-        });
-        return { ...svc, bookingCount: ts._count.id };
-      })
-    );
+    // Batch-resolve the top services in ONE query (no N+1), then re-attach counts
+    // preserving the booking-count ordering from the groupBy above.
+    const topServiceRows = await prisma.service.findMany({
+      where: { id: { in: topServices.map((ts) => ts.serviceId) } },
+      select: { id: true, name: true, category: true },
+    });
+    const serviceById = new Map(topServiceRows.map((s) => [s.id, s]));
+    const topServiceDetails = topServices.map((ts) => {
+      const svc = serviceById.get(ts.serviceId);
+      return {
+        id: ts.serviceId,
+        name: svc?.name ?? null,
+        category: svc?.category ?? null,
+        bookingCount: ts._count.id,
+      };
+    });
 
     return {
       totalUsers,

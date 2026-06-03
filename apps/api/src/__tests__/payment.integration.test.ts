@@ -183,22 +183,22 @@ describe("POST /payments/initiate", () => {
 // ─── Webhook signature verification ───────────────────────────────────────────
 
 describe("POST /payments/webhook — signature", () => {
-  it("rejects a missing signature (401)", async () => {
+  it("rejects a missing signature (400)", async () => {
     const res = await postWebhook(chargeSuccess("glamly-nope"), { sign: false });
-    expect(res.status).toBe(401);
+    expect(res.status).toBe(400);
     expect(res.body.error.code).toBe(ERROR_CODES.PAYMENT_SIGNATURE_INVALID);
   });
 
-  it("rejects a tampered signature (401)", async () => {
+  it("rejects a tampered signature (400)", async () => {
     const res = await postWebhook(chargeSuccess("glamly-nope"), { signature: "deadbeef" });
-    expect(res.status).toBe(401);
+    expect(res.status).toBe(400);
   });
 
-  it("rejects a body that doesn't match its signature (401)", async () => {
+  it("rejects a body that doesn't match its signature (400)", async () => {
     // Sign one payload, send a different one.
     const goodSig = paystack.signPayload(JSON.stringify(chargeSuccess("ref-a")));
     const res = await postWebhook(chargeSuccess("ref-b"), { signature: goodSig });
-    expect(res.status).toBe(401);
+    expect(res.status).toBe(400);
   });
 
   it("accepts a validly signed unknown-reference event without side effects (200)", async () => {

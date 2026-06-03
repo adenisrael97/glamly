@@ -136,10 +136,15 @@ export const stylistsRepository = {
     });
   },
 
-  /** Minimal existence/availability check used by the booking + availability flows. */
+  /**
+   * Minimal existence/availability check used by the booking, availability, and
+   * public-reviews flows. Scoped to APPROVED stylists only — a customer must not
+   * be able to book, view availability for, or browse reviews of a stylist who is
+   * PENDING_APPROVAL, REJECTED, or SUSPENDED, even by guessing the id directly.
+   */
   async findActiveById(id: string) {
     return prisma.stylist.findFirst({
-      where: { id, deletedAt: null },
+      where: { id, deletedAt: null, status: StylistStatus.APPROVED },
       select: { id: true, isAvailable: true },
     });
   },

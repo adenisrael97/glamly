@@ -137,4 +137,11 @@ export const servicesRepository = {
       where: { id: { in: ids }, stylistId, isActive: true },
     });
   },
+
+  /** Batch-fetch active services by id (any stylist). One query — no N+1. */
+  async findManyByIds(ids: string[]) {
+    return prisma.service.findMany({
+      where: { id: { in: ids }, isActive: true, stylist: { deletedAt: null } },
+    });
+  },
 };

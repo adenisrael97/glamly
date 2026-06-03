@@ -44,11 +44,28 @@ export const giftVouchersRepository = {
     return prisma.giftVoucher.findUnique({ where: { code }, include: voucherInclude });
   },
 
-  async markRedeemed(id: string) {
-    return prisma.giftVoucher.update({
-      where: { id },
+  /**
+   * Atomically claim a voucher for redemption: flip isRedeemed false→true only if
+   * it is still unredeemed. Returns true if THIS call won the claim — so two
+   * concurrent redemptions can never both proceed to create a booking (§11).
+   */
+  async claimForRedemption(id: string): Promise<boolean> {
+    const res = await prisma.giftVoucher.updateMany({
+      where: { id, isRedeemed: false },
       data: { isRedeemed: true, redeemedAt: new Date() },
-      include: voucherInclude,
     });
+    return res.count === 1;
+  },
+
+  /** Undo a claim when the follow-on booking creation fails, so the voucher stays usable. */
+  async releaseRedemption(id: string): Promise<void> {
+    await prisma.giftVoucher.updateMany({
+      where: { id, isRedeemed: true },
+      data: { isRedeemed: false, redeemedAt: null },
+    });
+  },
+
+  async findById(id: string) {
+    return prisma.giftVoucher.findUnique({ where: { id }, include: voucherInclude });
   },
 };

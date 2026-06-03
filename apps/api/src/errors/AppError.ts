@@ -152,10 +152,12 @@ export class BookingNotPayableError extends ConflictError {
 }
 
 // The Paystack webhook signature header was missing or did not match the HMAC of
-// the raw body. Returned as 401 so the (server-to-server) caller sees it failed.
+// the raw body. Returned as 400 Bad Request: the endpoint carries no auth scheme
+// to challenge (so 401 is semantically wrong) — the request body simply failed
+// authenticity verification. Mirrors the canonical Stripe webhook pattern.
 export class WebhookSignatureError extends AppError {
   constructor() {
-    super("Invalid webhook signature", 401, ERROR_CODES.PAYMENT_SIGNATURE_INVALID);
+    super("Invalid webhook signature", 400, ERROR_CODES.PAYMENT_SIGNATURE_INVALID);
   }
 }
 
