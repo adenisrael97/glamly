@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { Request, Response } from "express";
 import { authenticate, requireRole } from "../../middleware/auth";
-import { validateBody, validateParams, validateQuery } from "../../middleware/validate";
+import { validateBody, validateParams } from "../../middleware/validate";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { sendSuccess, sendCreated } from "../../lib/apiResponse";
 import { stylistMeService } from "../../services/stylist-me.service";

@@ -7,10 +7,8 @@ import {
 import { stylistsRepository } from "../repositories/stylists.repository";
 import { servicesRepository } from "../repositories/services.repository";
 import { packagesRepository } from "../repositories/packages.repository";
-import { ForbiddenError, NotFoundError } from "../errors/AppError";
-import { AppError } from "../errors/AppError";
+import { AppError, NotFoundError } from "../errors/AppError";
 import { ERROR_CODES } from "@glamly/shared";
-import { StylistStatus } from "@prisma/client";
 
 function clamp(page?: number, limit?: number) {
   return {

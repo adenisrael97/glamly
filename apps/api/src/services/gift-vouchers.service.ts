@@ -1,11 +1,9 @@
-import { PAGINATION_DEFAULT_PAGE_SIZE } from "@glamly/shared";
 import type { CreateGiftVoucherInput, RedeemGiftVoucherInput } from "@glamly/shared";
+import { ERROR_CODES } from "@glamly/shared";
 import { giftVouchersRepository } from "../repositories/gift-vouchers.repository";
 import { servicesRepository } from "../repositories/services.repository";
 import { bookingsService } from "./bookings.service";
 import { AppError, NotFoundError } from "../errors/AppError";
-import { ERROR_CODES } from "@glamly/shared";
-import { isValidSlotStart } from "@glamly/shared";
 
 export const giftVouchersService = {
   async create(userId: string, input: CreateGiftVoucherInput) {
