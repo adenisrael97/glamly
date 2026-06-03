@@ -108,6 +108,30 @@ export const stylistsRepository = {
           },
           orderBy: { price: "asc" },
         },
+        // Active packages the stylist offers (shown on the profile + booking wizard).
+        packages: {
+          where: { isActive: true },
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            price: true,
+            duration: true,
+            imageUrl: true,
+            isActive: true,
+            createdAt: true,
+            updatedAt: true,
+            stylistId: true,
+            services: {
+              select: {
+                service: {
+                  select: { id: true, name: true, category: true, description: true, price: true, duration: true, imageUrl: true },
+                },
+              },
+            },
+          },
+          orderBy: { price: "asc" },
+        },
       },
     });
   },

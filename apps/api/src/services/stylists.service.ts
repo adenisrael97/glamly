@@ -98,15 +98,22 @@ export const stylistsService = {
     const stylist = await stylistsRepository.findDetailById(id);
     if (!stylist) throw new NotFoundError("Stylist not found");
 
-    const { rating, reviewCount, ...rest } = stylist;
+    const { rating, reviewCount, packages, ...rest } = stylist;
 
     // Next bookable slot across the booking horizon — a cheap UI affordance.
     const nextAvailableSlot = stylist.isAvailable
       ? (await this.computeSlots(id, { days: BOOKING_MAX_ADVANCE_DAYS }))[0]?.startTime ?? null
       : null;
 
+    // Flatten each package's nested join rows to a plain service[] for the DTO.
+    const flatPackages = packages.map((pkg) => {
+      const { services, ...pkgRest } = pkg;
+      return { ...pkgRest, services: services.map((ps) => ps.service) };
+    });
+
     return {
       ...rest,
+      packages: flatPackages,
       ratingsSummary: {
         average: Number(rating.toFixed(2)),
         count: reviewCount,

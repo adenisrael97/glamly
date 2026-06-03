@@ -125,7 +125,7 @@ function BookFlow({ stylistId, initialServiceId }: { stylistId: string; initialS
   const primaryServiceId = useMemo(() => {
     if (selectedServiceIds.length > 0) return selectedServiceIds[0];
     if (selectedPackageId && stylist) {
-      const pkg = stylist.packages.find((p) => p.id === selectedPackageId);
+      const pkg = (stylist.packages ?? []).find((p) => p.id === selectedPackageId);
       return pkg?.services[0]?.id ?? null;
     }
     return null;
@@ -137,7 +137,7 @@ function BookFlow({ stylistId, initialServiceId }: { stylistId: string; initialS
     [stylist, selectedServiceIds],
   );
   const selectedPackage = useMemo(
-    () => stylist?.packages.find((p) => p.id === selectedPackageId),
+    () => (stylist?.packages ?? []).find((p) => p.id === selectedPackageId),
     [stylist, selectedPackageId],
   );
 
@@ -249,7 +249,7 @@ function BookFlow({ stylistId, initialServiceId }: { stylistId: string; initialS
             </h2>
             <ServiceSelector
               services={stylist.services}
-              packages={stylist.packages}
+              packages={stylist.packages ?? []}
               selectedServiceIds={selectedServiceIds}
               selectedPackageId={selectedPackageId}
               onServicesChange={(ids) => { setSelectedServiceIds(ids); setSlot(null); setError(null); }}
