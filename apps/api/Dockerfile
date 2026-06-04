@@ -51,7 +51,7 @@ RUN pnpm --filter @glamly/api build
 # 4. Create a standalone deploy directory with production deps only.
 #    pnpm deploy inlines workspace packages (including shared/dist/) so the
 #    runner stage needs no pnpm or workspace awareness.
-RUN pnpm deploy --filter @glamly/api --prod /deploy
+RUN pnpm deploy --filter @glamly/api --prod --legacy /deploy
 
 # Copy the compiled dist and Prisma artifacts into the deploy root.
 RUN cp -r apps/api/dist   /deploy/dist
