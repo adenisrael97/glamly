@@ -81,7 +81,7 @@ export default function LoginPage() {
         typeof window !== "undefined"
           ? new URLSearchParams(window.location.search).get("next")
           : null;
-      router.push(next ?? (user.role === "stylist" ? "/studio" : "/"));
+      router.push(next ?? (user.role === "admin" ? "/admin/dashboard" : user.role === "stylist" ? "/studio" : "/dashboard"));
     } catch {
       // error already surfaced via context
     } finally {
