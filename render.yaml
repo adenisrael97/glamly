@@ -15,7 +15,7 @@ services:
     runtime: docker
     dockerfilePath: ./apps/api/Dockerfile
     region: oregon
-    plan: starter
+    plan: free
 
     envVars:
       # ── Runtime ─────────────────────────────────────────────────────────────
@@ -91,7 +91,7 @@ services:
 
   - type: redis
     name: glamly-redis
-    plan: starter
+    plan: free
     maxmemoryPolicy: allkeys-lru
     ipAllowList: []
 
