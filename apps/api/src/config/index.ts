@@ -33,6 +33,13 @@ const envSchema = z.object({
   VAPID_PRIVATE_KEY: z.string().optional(),
   VAPID_SUBJECT: z.string().default("mailto:noreply@glamly.ng"),
 
+  // ── Cloudinary (image storage — avatars + portfolios, §2) ────────────────────
+  // Optional so the server boots without credentials. Upload endpoints return 503
+  // when any of the three vars is absent (fail-soft, same pattern as Resend/VAPID).
+  CLOUDINARY_CLOUD_NAME: z.string().optional(),
+  CLOUDINARY_API_KEY: z.string().optional(),
+  CLOUDINARY_API_SECRET: z.string().optional(),
+
   // ── Error reporting (Sentry, §13) ─────────────────────────────────────────
   // Optional: when unset the SDK never initialises and error capture is a no-op,
   // so the server runs locally/in CI without a Sentry project. Set in production.

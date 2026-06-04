@@ -88,10 +88,11 @@ export const paymentsService = {
         currency: "NGN",
         reference,
       });
-    } else if (existing.status === "PENDING" && existing.paystackRef) {
-      // Resume the in-flight checkout with the same reference (idempotent retry).
-      reference = existing.paystackRef;
-    } else if (existing.status === "FAILED") {
+    } else if (existing.status === "PENDING" || existing.status === "FAILED") {
+      // Generate a fresh reference every time the customer retries. Paystack
+      // rejects `initializeTransaction` with a duplicate-reference error if the
+      // same reference was used for a prior checkout attempt, so reusing it is
+      // unreliable. A new reference guarantees a fresh, valid checkout URL.
       reference = generateReference(booking.id);
       await paymentsRepository.reinitialize(existing.id, reference, amountKobo);
     } else {
@@ -101,11 +102,15 @@ export const paymentsService = {
 
     let session: InitiatePaymentResult;
     try {
+      // Build a per-booking callback URL so Paystack redirects the customer
+      // directly to their booking detail page (which polls for payment status).
+      // The reference query param is appended by Paystack automatically.
+      const callbackUrl = `${config.WEB_APP_URL}/booking/${booking.id}`;
       session = await paystack.initializeTransaction({
         email: user.email,
         amountKobo,
         reference,
-        callbackUrl: config.PAYSTACK_CALLBACK_URL,
+        callbackUrl,
         metadata: { bookingId: booking.id, userId: booking.userId },
       });
     } catch (err) {

@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from "express";
+import multer from "multer";
 import { AppError } from "../errors/AppError";
 import { logger } from "../lib/logger";
 import { config } from "../config";
@@ -13,6 +14,27 @@ export function errorHandler(
   _next: NextFunction,
 ): void {
   const correlationId = req.headers["x-request-id"] as string | undefined;
+
+  // Map multer errors (file size, count, unexpected field) to typed 4xx responses
+  // so clients get a proper error code rather than a 500.
+  if (err instanceof multer.MulterError) {
+    const statusCode = err.code === "LIMIT_FILE_SIZE" ? 413 : 400;
+    const message =
+      err.code === "LIMIT_FILE_SIZE"
+        ? "File is too large — check the size limit for this upload"
+        : err.code === "LIMIT_FILE_COUNT"
+          ? "Too many files — upload one file at a time"
+          : err.code === "LIMIT_UNEXPECTED_FILE"
+            ? "Unexpected file field — use the field name 'file'"
+            : err.message;
+    logger.warn("Multer upload error", { correlationId, code: err.code, message });
+    res.status(statusCode).json({
+      success: false,
+      message,
+      error: { code: "VALIDATION_ERROR", message },
+    });
+    return;
+  }
 
   if (err instanceof AppError && err.isOperational) {
     logger.warn("Operational error", {

@@ -175,6 +175,44 @@ export const stylistsRepository = {
     return prisma.stylist.update({ where: { id }, data });
   },
 
+  /** Persist a new avatar URL for the stylist's storefront. */
+  async updateAvatar(id: string, avatarUrl: string) {
+    return prisma.stylist.update({ where: { id }, data: { avatarUrl } });
+  },
+
+  /**
+   * Append one portfolio URL to the array and return the updated list.
+   * Capped at 20 images — callers must check before calling.
+   */
+  async addPortfolioImage(id: string, url: string): Promise<string[]> {
+    const updated = await prisma.stylist.update({
+      where: { id },
+      data: { portfolioUrls: { push: url } },
+      select: { portfolioUrls: true },
+    });
+    return updated.portfolioUrls;
+  },
+
+  /**
+   * Remove a portfolio image by its URL. This is a read-then-write (filter the
+   * current array, then `set` it back), so two concurrent removals could race;
+   * portfolio edits are single-actor and low-frequency, so that risk is
+   * acceptable. The owning service verifies the URL exists before calling.
+   */
+  async removePortfolioImage(id: string, url: string): Promise<string[]> {
+    const stylist = await prisma.stylist.findUnique({
+      where: { id },
+      select: { portfolioUrls: true },
+    });
+    const filtered = (stylist?.portfolioUrls ?? []).filter((u) => u !== url);
+    const updated = await prisma.stylist.update({
+      where: { id },
+      data: { portfolioUrls: { set: filtered } },
+      select: { portfolioUrls: true },
+    });
+    return updated.portfolioUrls;
+  },
+
   /**
    * Active (slot-occupying) bookings for a stylist whose interval overlaps
    * [from, to). Used to subtract booked time from the generated slot grid.

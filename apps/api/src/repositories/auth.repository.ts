@@ -81,6 +81,11 @@ export const authRepository = {
     return prisma.user.update({ where: { id }, data });
   },
 
+  /** Persist a new avatar URL for the user (the old URL is cleaned up by the Cloudinary integration). */
+  async updateAvatar(id: string, avatarUrl: string): Promise<User> {
+    return prisma.user.update({ where: { id }, data: { avatarUrl } });
+  },
+
   /**
    * A stylist's storefront approval status by their userId, or null if the user
    * has no stylist profile. Lets the auth layer embed `stylistStatus` on the

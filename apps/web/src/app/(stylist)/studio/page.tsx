@@ -166,6 +166,11 @@ export default function StudioOverviewPage() {
             title="View Bookings"
             description="See upcoming, pending, and past appointments."
           />
+          <ActionCard
+            href="/studio/profile"
+            title="Edit Profile"
+            description="Update your bio, photo, specialty, and portfolio."
+          />
         </div>
       </section>
     </div>

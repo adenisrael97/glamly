@@ -32,4 +32,19 @@ export const authApi = {
   updateProfile(input: UpdateProfileInput): Promise<AuthUser> {
     return unwrap<AuthUser>(client.patch("/auth/me", input));
   },
+
+  /**
+   * Upload a new avatar for the authenticated user.
+   * Sends multipart/form-data; Axios detects FormData and sets the correct
+   * Content-Type header (including the multipart boundary) automatically.
+   */
+  uploadAvatar(file: File): Promise<AuthUser> {
+    const form = new FormData();
+    form.append("file", file);
+    return unwrap<AuthUser>(
+      client.post("/auth/me/avatar", form, {
+        headers: { "Content-Type": "multipart/form-data" },
+      }),
+    );
+  },
 };

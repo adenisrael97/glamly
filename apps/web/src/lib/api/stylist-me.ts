@@ -50,6 +50,18 @@ export interface UpdateProfileInput {
   isAvailable?: boolean;
 }
 
+/** The stylist's own storefront profile, as returned by GET /stylists/me/profile. */
+export interface StylistProfile {
+  bio: string | null;
+  specialty: string;
+  location: string;
+  tags: string[];
+  experience: number | null;
+  isAvailable: boolean;
+  avatarUrl: string | null;
+  portfolioUrls: string[];
+}
+
 export const stylistMeApi = {
   // ─── Services ──────────────────────────────────────────────────────────────
 
@@ -89,8 +101,42 @@ export const stylistMeApi = {
 
   // ─── Profile ───────────────────────────────────────────────────────────────
 
+  getProfile(): Promise<StylistProfile> {
+    return unwrap<StylistProfile>(client.get("/stylists/me/profile"));
+  },
+
   updateProfile(input: UpdateProfileInput): Promise<{ isAvailable: boolean }> {
     return unwrap<{ isAvailable: boolean }>(client.patch("/stylists/me/profile", input));
+  },
+
+  // ─── Avatar ────────────────────────────────────────────────────────────────
+
+  uploadAvatar(file: File): Promise<{ avatarUrl: string }> {
+    const form = new FormData();
+    form.append("file", file);
+    return unwrap<{ avatarUrl: string }>(
+      client.post("/stylists/me/avatar", form, {
+        headers: { "Content-Type": "multipart/form-data" },
+      }),
+    );
+  },
+
+  // ─── Portfolio ─────────────────────────────────────────────────────────────
+
+  addPortfolioImage(file: File): Promise<{ portfolioUrls: string[] }> {
+    const form = new FormData();
+    form.append("file", file);
+    return unwrap<{ portfolioUrls: string[] }>(
+      client.post("/stylists/me/portfolio", form, {
+        headers: { "Content-Type": "multipart/form-data" },
+      }),
+    );
+  },
+
+  removePortfolioImage(url: string): Promise<{ portfolioUrls: string[] }> {
+    return unwrap<{ portfolioUrls: string[] }>(
+      client.delete("/stylists/me/portfolio", { data: { url } }),
+    );
   },
 
   // ─── Booking actions (provider side) ──────────────────────────────────────

@@ -156,12 +156,22 @@ describe("POST /payments/initiate", () => {
     expect(payment!.paystackRef).toBe(res.body.data.reference);
   });
 
-  it("is idempotent — re-initiating reuses the same reference", async () => {
+  it("re-initiating a pending payment re-arms the same row with a fresh reference", async () => {
     const bookingId = await createBooking(customerAToken, 1, 10);
     const first = await initiate(customerAToken, bookingId);
     const second = await initiate(customerAToken, bookingId);
     expect(second.status).toBe(200);
-    expect(second.body.data.reference).toBe(first.body.data.reference);
+
+    // A retry mints a NEW reference — Paystack rejects re-initializing with a
+    // reference it has already seen, so reuse is unreliable. The idempotency that
+    // matters is at the row level: the booking still maps to exactly ONE payment
+    // row (re-armed in place), so the customer can never be double-charged.
+    expect(second.body.data.reference).not.toBe(first.body.data.reference);
+
+    const payments = await prisma.payment.findMany({ where: { bookingId } });
+    expect(payments).toHaveLength(1);
+    expect(payments[0]!.status).toBe("PENDING");
+    expect(payments[0]!.paystackRef).toBe(second.body.data.reference);
   });
 
   it("forbids paying for another customer's booking (403)", async () => {

@@ -81,6 +81,10 @@ vi.mock("../repositories/auth.repository", () => {
         const u = usersById.get(id);
         if (u) u.lastLoginAt = new Date();
       }),
+      // resolveAuthUser() embeds a stylist's approval status; the fake has no
+      // Stylist table, so report null (resolveAuthUser tolerates it). Without
+      // this stub, registering/logging in as a stylist throws "not a function".
+      getStylistStatusByUserId: vi.fn(async () => null),
     },
   };
 });

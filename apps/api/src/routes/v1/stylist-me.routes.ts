@@ -12,6 +12,8 @@ import {
   PAGINATION_DEFAULT_PAGE_SIZE,
 } from "@glamly/shared";
 import { z } from "zod";
+import { uploadAvatar, uploadPortfolio } from "../../middleware/upload";
+import { ValidationError } from "../../errors/AppError";
 
 const router = Router();
 
@@ -125,7 +127,56 @@ router.delete(
   }),
 );
 
+// ─── Avatar ──────────────────────────────────────────────────────────────────
+
+router.post(
+  "/me/avatar",
+  ...guard,
+  (req: Request, res: Response, next: (err?: unknown) => void) => {
+    uploadAvatar(req, res as never, next);
+  },
+  asyncHandler(async (req: Request, res: Response) => {
+    if (!req.file) throw new ValidationError("No file provided — attach an image as field 'file'");
+    const result = await stylistMeService.uploadAvatar(req.user!.id, req.file.buffer);
+    sendSuccess(res, result, "Avatar updated successfully");
+  }),
+);
+
+// ─── Portfolio ───────────────────────────────────────────────────────────────
+
+router.post(
+  "/me/portfolio",
+  ...guard,
+  (req: Request, res: Response, next: (err?: unknown) => void) => {
+    uploadPortfolio(req, res as never, next);
+  },
+  asyncHandler(async (req: Request, res: Response) => {
+    if (!req.file) throw new ValidationError("No file provided — attach an image as field 'file'");
+    const result = await stylistMeService.addPortfolioImage(req.user!.id, req.file.buffer);
+    sendCreated(res, result, "Portfolio image added");
+  }),
+);
+
+router.delete(
+  "/me/portfolio",
+  ...guard,
+  validateBody(z.object({ url: z.string().url("url must be a valid URL") })),
+  asyncHandler(async (req: Request, res: Response) => {
+    const result = await stylistMeService.removePortfolioImage(req.user!.id, req.body.url as string);
+    sendSuccess(res, result, "Portfolio image removed");
+  }),
+);
+
 // ─── Profile ─────────────────────────────────────────────────────────────────
+
+router.get(
+  "/me/profile",
+  ...guard,
+  asyncHandler(async (req: Request, res: Response) => {
+    const profile = await stylistMeService.getProfile(req.user!.id);
+    sendSuccess(res, profile, "Profile retrieved");
+  }),
+);
 
 const updateProfileSchema = z.object({
   bio: z.string().trim().max(1000).optional(),

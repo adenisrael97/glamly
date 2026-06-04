@@ -19,6 +19,7 @@ const CATEGORY = `Cat_${RUN}`;
 let app: Express;
 const createdUserIds = new Set<string>();
 let stylistId = "";
+let stylistToken = "";
 let activeServiceId = "";
 let inactiveServiceId = "";
 
@@ -44,6 +45,7 @@ beforeAll(async () => {
   app = createApp();
 
   const s = await registerStylist();
+  stylistToken = s.token;
   const profile = await prisma.stylist.findUniqueOrThrow({ where: { userId: s.id } });
   stylistId = profile.id;
 
@@ -79,6 +81,31 @@ afterAll(async () => {
   await prisma.user.deleteMany({ where: { email: { contains: RUN } } });
   await prisma.$disconnect();
   redis.disconnect();
+});
+
+describe("Stylist profile API (GET /stylists/me/profile)", () => {
+  it("returns the authenticated stylist's own storefront profile", async () => {
+    const res = await request(app)
+      .get("/api/v1/stylists/me/profile")
+      .set("Authorization", `Bearer ${stylistToken}`);
+    expect(res.status).toBe(200);
+    // Seeded from registration (specialty/location); the rest are storefront
+    // defaults the studio edit form must be able to read back.
+    expect(res.body.data).toMatchObject({
+      specialty: "Makeup",
+      location: "Lekki",
+      isAvailable: true,
+      tags: [],
+      portfolioUrls: [],
+      avatarUrl: null,
+      experience: null,
+    });
+  });
+
+  it("requires authentication (401 without a token)", async () => {
+    const res = await request(app).get("/api/v1/stylists/me/profile");
+    expect(res.status).toBe(401);
+  });
 });
 
 describe("Services API", () => {

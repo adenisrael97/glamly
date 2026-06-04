@@ -7,6 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useMyBookings } from "@/hooks/useBookings";
 import { useRealtime } from "@/hooks/useRealtime";
 import BookingCard from "@/components/features/BookingCard";
+import AvatarUpload from "@/components/ui/AvatarUpload";
 
 const FILTERS: { label: string; value: BookingStatus | "ALL" }[] = [
   { label: "All", value: "ALL" },
@@ -16,13 +17,26 @@ const FILTERS: { label: string; value: BookingStatus | "ALL" }[] = [
   { label: "Cancelled", value: "CANCELLED" },
 ];
 
+// A single read-only label/value row in the profile summary. Declared at module
+// scope (not inside ProfileSection) so it isn't recreated on every render.
+function Row({ label, value }: { label: string; value: string | null }) {
+  return (
+    <div className="flex justify-between gap-4 py-1.5">
+      <span className="text-sm text-gray-500">{label}</span>
+      <span className="text-sm font-medium text-gray-900 text-right">
+        {value || <span className="text-gray-400 italic">Not set</span>}
+      </span>
+    </div>
+  );
+}
+
 // ─── Profile (name / phone / address) ─────────────────────────────────────────
 //
 // Customers register with only name/email/password, so phone + a service/home
 // address are captured here. Stylists need these to reach the customer and to
 // know where a home appointment is.
 function ProfileSection() {
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, uploadAvatar } = useAuth();
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,15 +68,6 @@ function ProfileSection() {
     }
   };
 
-  const Row = ({ label, value }: { label: string; value: string | null }) => (
-    <div className="flex justify-between gap-4 py-1.5">
-      <span className="text-sm text-gray-500">{label}</span>
-      <span className="text-sm font-medium text-gray-900 text-right">
-        {value || <span className="text-gray-400 italic">Not set</span>}
-      </span>
-    </div>
-  );
-
   const inputClass =
     "w-full px-3 py-2 rounded-lg border border-gray-300 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent";
 
@@ -71,7 +76,7 @@ function ProfileSection() {
       aria-label="Your profile"
       className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-6"
     >
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-4">
         <h2 className="text-base font-semibold text-gray-900">Your profile</h2>
         {!editing && (
           <button
@@ -82,6 +87,16 @@ function ProfileSection() {
             Edit
           </button>
         )}
+      </div>
+
+      {/* Avatar */}
+      <div className="flex justify-center mb-5">
+        <AvatarUpload
+          currentUrl={user.avatarUrl}
+          name={user.name}
+          onUpload={async (file) => { await uploadAvatar(file); }}
+          size={88}
+        />
       </div>
 
       {editing ? (

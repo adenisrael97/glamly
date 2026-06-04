@@ -112,6 +112,8 @@ interface AuthContextValue {
   login: (creds: LoginInput) => Promise<AuthUser>;
   register: (input: RegisterInput) => Promise<AuthUser>;
   updateProfile: (input: UpdateProfileInput) => Promise<AuthUser>;
+  /** Upload a new avatar for the authenticated user and update React state. */
+  uploadAvatar: (file: File) => Promise<AuthUser>;
   logout: () => Promise<void>;
   clearError: () => void;
 }
@@ -208,6 +210,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const uploadAvatar = useCallback(async (file: File) => {
+    dispatch({ type: "CLEAR_ERROR" });
+    try {
+      const updated = await authApi.uploadAvatar(file);
+      dispatch({ type: "UPDATE_USER", user: updated });
+      return updated;
+    } catch (err) {
+      dispatch({ type: "ERROR", error: messageFor(err) });
+      throw err;
+    }
+  }, []);
+
   const logout = useCallback(async () => {
     try {
       await authApi.logout();
@@ -230,10 +244,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login,
       register,
       updateProfile,
+      uploadAvatar,
       logout,
       clearError,
     }),
-    [state, login, register, updateProfile, logout, clearError],
+    [state, login, register, updateProfile, uploadAvatar, logout, clearError],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

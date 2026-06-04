@@ -17,6 +17,11 @@ import {
   isUniqueConstraintError,
 } from "../repositories/auth.repository";
 import { auditRepository } from "../repositories/audit.repository";
+import {
+  cloudinary,
+  UploadFailedError,
+  UploadNotConfiguredError,
+} from "../integrations/cloudinary";
 import { refreshTokenStore } from "../repositories/refreshTokenStore";
 import {
   EmailTakenError,
@@ -231,6 +236,38 @@ export const authService = {
     // The access token verified, but the account vanished (deleted) — treat as
     // session gone rather than a 404 leak.
     if (!user) throw new SessionExpiredError();
+    return resolveAuthUser(user);
+  },
+
+  /**
+   * Upload and persist a new avatar for the authenticated user.
+   * Accepts a raw buffer from the multer memory-storage middleware.
+   * The old avatar is deleted from Cloudinary as a best-effort side-effect.
+   */
+  async uploadAvatar(
+    userId: string,
+    buffer: Buffer,
+    ctx: AuthContext = {},
+  ): Promise<AuthUser> {
+    if (!cloudinary.isConfigured()) throw new UploadNotConfiguredError();
+
+    // Fetch current avatar URL so the integration can delete the old asset.
+    const current = await authRepository.findActiveById(userId);
+    const result = await cloudinary.upload(buffer, "avatar", current?.avatarUrl);
+
+    if (result.status === "not_configured") throw new UploadNotConfiguredError();
+    if (result.status === "failed") throw new UploadFailedError(result.error);
+
+    const user = await authRepository.updateAvatar(userId, result.url);
+
+    await auditRepository.record({
+      userId,
+      action: "AVATAR_UPDATED",
+      entityType: "User",
+      entityId: userId,
+      ipAddress: ctx.ipAddress,
+    });
+
     return resolveAuthUser(user);
   },
 
