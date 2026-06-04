@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, startTransition, type ReactNode } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import useSWR from "swr";
 import { adminApi } from "@/lib/api/admin";
 import { useAuth } from "@/context/AuthContext";
@@ -218,6 +218,7 @@ function Sidebar({
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
   const { user, logout } = useAuth();
   const overlayRef = useRef<HTMLDivElement>(null);
 
@@ -275,6 +276,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       await logout();
     } catch {
       // ignore
+    } finally {
+      router.push("/Login");
     }
   };
 
