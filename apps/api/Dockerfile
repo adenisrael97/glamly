@@ -57,6 +57,12 @@ RUN pnpm deploy --filter @glamly/api --prod --legacy /deploy
 RUN cp -r apps/api/dist   /deploy/dist
 RUN cp -r apps/api/prisma /deploy/prisma
 
+# Regenerate the Prisma client INSIDE the deploy tree. `pnpm deploy` rebuilds
+# node_modules from the store and drops the client generated earlier, so it must
+# be generated again against the deployed node_modules or the runtime throws
+# "@prisma/client did not initialize yet".
+RUN cd /deploy && node_modules/.bin/prisma generate
+
 # ── runner ────────────────────────────────────────────────────────────────────
 FROM node:20-alpine AS runner
 WORKDIR /app
