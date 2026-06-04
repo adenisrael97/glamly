@@ -1,4 +1,10 @@
-import type { AuthResult, AuthUser, LoginInput, RegisterInput } from "@glamly/shared";
+import type {
+  AuthResult,
+  AuthUser,
+  LoginInput,
+  RegisterInput,
+  UpdateProfileInput,
+} from "@glamly/shared";
 import { client, unwrap, setAccessToken } from "./client";
 
 // Auth endpoints. The access token returned here is held in memory by the client
@@ -21,5 +27,9 @@ export const authApi = {
 
   me(): Promise<AuthUser> {
     return unwrap<AuthUser>(client.get("/auth/me"));
+  },
+
+  updateProfile(input: UpdateProfileInput): Promise<AuthUser> {
+    return unwrap<AuthUser>(client.patch("/auth/me", input));
   },
 };

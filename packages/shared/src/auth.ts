@@ -136,6 +136,30 @@ export const loginSchema = z.object({
 
 export type LoginInput = z.infer<typeof loginSchema>;
 
+// ─── Profile update ─────────────────────────────────────────────────────────
+//
+// Self-service profile edit (PATCH /auth/me). Every field is optional, but at
+// least one must be present — an empty patch is rejected so the client can't
+// silently no-op. Validated at the boundary before reaching the service (§6).
+
+const addressSchema = z
+  .string()
+  .trim()
+  .min(5, "Address is too short")
+  .max(200, "Address is too long");
+
+export const updateProfileSchema = z
+  .object({
+    name: nameSchema.optional(),
+    phone: phoneSchema.optional(),
+    address: addressSchema.optional(),
+  })
+  .refine((data) => Object.keys(data).length > 0, {
+    message: "Provide at least one field to update",
+  });
+
+export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
+
 // ─── Token & user shapes ───────────────────────────────────────────────────────
 
 /** Claims carried by the short-lived access JWT. */
@@ -152,6 +176,13 @@ export interface RefreshTokenPayload {
   jti: string;
 }
 
+/** Storefront approval state for a stylist (mirrors Prisma `StylistStatus`). */
+export type StylistApprovalStatus =
+  | "PENDING_APPROVAL"
+  | "APPROVED"
+  | "REJECTED"
+  | "SUSPENDED";
+
 /** Safe, public projection of a user — never contains the password hash. */
 export interface AuthUser {
   id: string;
@@ -159,8 +190,17 @@ export interface AuthUser {
   email: string;
   role: ApiRole;
   avatarUrl: string | null;
+  /** Contact phone (nullable until the user provides it). */
+  phone: string | null;
+  /** Service/home address (nullable until provided). */
+  address: string | null;
   isVerified: boolean;
   createdAt: string;
+  /**
+   * Present only for STYLIST users — their storefront approval state, so the
+   * client can gate the studio (pending/suspended) without a separate fetch.
+   */
+  stylistStatus?: StylistApprovalStatus | null;
 }
 
 /** Successful auth response body (access token in body, refresh in httpOnly cookie). */

@@ -73,6 +73,27 @@ export const authRepository = {
     await prisma.user.update({ where: { id }, data: { lastLoginAt: new Date() } });
   },
 
+  /** Patch a user's own editable profile fields (name/phone/address). */
+  async updateProfile(
+    id: string,
+    data: { name?: string; phone?: string; address?: string },
+  ): Promise<User> {
+    return prisma.user.update({ where: { id }, data });
+  },
+
+  /**
+   * A stylist's storefront approval status by their userId, or null if the user
+   * has no stylist profile. Lets the auth layer embed `stylistStatus` on the
+   * AuthUser so the client can gate the studio without a second round-trip.
+   */
+  async getStylistStatusByUserId(userId: string): Promise<string | null> {
+    const stylist = await prisma.stylist.findUnique({
+      where: { userId },
+      select: { status: true },
+    });
+    return stylist?.status ?? null;
+  },
+
   /**
    * Purge refresh tokens persisted in Postgres that are past expiry or revoked
    * (CLAUDE.md §10 retention). The live whitelist lives in Redis and self-expires

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { loginSchema, registerSchema } from "@glamly/shared";
+import { loginSchema, registerSchema, updateProfileSchema } from "@glamly/shared";
 import { authController } from "../../controllers/auth.controller";
 import { authenticate } from "../../middleware/auth";
 import { validateBody } from "../../middleware/validate";
@@ -29,5 +29,8 @@ router.post("/logout", authController.logout);
 
 // Protected: requires a valid access token. Serves as the canonical "who am I".
 router.get("/me", authenticate, authController.me);
+
+// Self-service profile edit (name/phone/address). Validated at the boundary.
+router.patch("/me", authenticate, validateBody(updateProfileSchema), authController.updateProfile);
 
 export default router;

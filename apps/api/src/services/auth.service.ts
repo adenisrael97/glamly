@@ -4,10 +4,13 @@ import { User } from "@prisma/client";
 import {
   apiRoleToDbRole,
   dbRoleToApiRole,
+  ROLES,
   type AuthUser,
   type LoginInput,
   type RegisterInput,
   type Role,
+  type StylistApprovalStatus,
+  type UpdateProfileInput,
 } from "@glamly/shared";
 import {
   authRepository,
@@ -228,7 +231,35 @@ export const authService = {
     // The access token verified, but the account vanished (deleted) — treat as
     // session gone rather than a 404 leak.
     if (!user) throw new SessionExpiredError();
-    return toAuthUser(user);
+    return resolveAuthUser(user);
+  },
+
+  /**
+   * Patch the authenticated user's own profile (name/phone/address). Returns the
+   * fresh public projection so the client can update its state in place.
+   */
+  async updateProfile(
+    userId: string,
+    input: UpdateProfileInput,
+    ctx: AuthContext = {},
+  ): Promise<AuthUser> {
+    const user = await authRepository.updateProfile(userId, {
+      ...(input.name !== undefined ? { name: input.name } : {}),
+      ...(input.phone !== undefined ? { phone: input.phone } : {}),
+      ...(input.address !== undefined ? { address: input.address } : {}),
+    });
+
+    await auditRepository.record({
+      userId,
+      action: "PROFILE_UPDATED",
+      entityType: "User",
+      entityId: userId,
+      // Field NAMES only — never the PII values themselves (§10).
+      metadata: { fields: Object.keys(input) },
+      ipAddress: ctx.ipAddress,
+    });
+
+    return resolveAuthUser(user);
   },
 };
 
@@ -246,7 +277,7 @@ async function issueSession(user: User): Promise<IssuedSession> {
   await refreshTokenStore.save(jti, user.id, refreshTokenTtlSeconds);
 
   return {
-    user: toAuthUser(user),
+    user: await resolveAuthUser(user),
     accessToken,
     refreshToken,
     accessExpiresIn: accessTokenTtlSeconds,
@@ -254,15 +285,30 @@ async function issueSession(user: User): Promise<IssuedSession> {
   };
 }
 
+/**
+ * Build the public AuthUser, additionally embedding `stylistStatus` for STYLIST
+ * accounts so the client can gate the studio (pending/suspended) up front.
+ */
+async function resolveAuthUser(user: User): Promise<AuthUser> {
+  if (user.role === ROLES.STYLIST) {
+    const status = await authRepository.getStylistStatusByUserId(user.id);
+    return toAuthUser(user, (status as StylistApprovalStatus | null) ?? null);
+  }
+  return toAuthUser(user);
+}
+
 /** Project a DB user to the safe, public shape — never exposes passwordHash. */
-function toAuthUser(user: User): AuthUser {
+function toAuthUser(user: User, stylistStatus?: StylistApprovalStatus | null): AuthUser {
   return {
     id: user.id,
     name: user.name,
     email: user.email,
     role: dbRoleToApiRole(user.role as Role),
     avatarUrl: user.avatarUrl ?? null,
+    phone: user.phone ?? null,
+    address: user.address ?? null,
     isVerified: user.isVerified,
     createdAt: user.createdAt.toISOString(),
+    ...(stylistStatus !== undefined ? { stylistStatus } : {}),
   };
 }

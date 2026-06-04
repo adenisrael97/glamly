@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import type { AuthResult, LoginInput, RegisterInput } from "@glamly/shared";
+import type { AuthResult, LoginInput, RegisterInput, UpdateProfileInput } from "@glamly/shared";
 import { authService, type IssuedSession } from "../services/auth.service";
 import { asyncHandler } from "../middleware/asyncHandler";
 import { sendSuccess, sendCreated } from "../lib/apiResponse";
@@ -72,5 +72,16 @@ export const authController = {
     if (!req.user) throw new UnauthorizedError();
     const user = await authService.getProfile(req.user.id);
     sendSuccess(res, user, "Profile retrieved successfully");
+  }),
+
+  updateProfile: asyncHandler(async (req: Request, res: Response) => {
+    if (!req.user) throw new UnauthorizedError();
+    // Body pre-validated by validateBody(updateProfileSchema) on the route.
+    const user = await authService.updateProfile(
+      req.user.id,
+      req.body as UpdateProfileInput,
+      { ipAddress: clientIp(req) },
+    );
+    sendSuccess(res, user, "Profile updated successfully");
   }),
 };

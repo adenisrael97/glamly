@@ -9,7 +9,13 @@ import {
   useReducer,
   type ReactNode,
 } from "react";
-import type { AuthResult, AuthUser, LoginInput, RegisterInput } from "@glamly/shared";
+import type {
+  AuthResult,
+  AuthUser,
+  LoginInput,
+  RegisterInput,
+  UpdateProfileInput,
+} from "@glamly/shared";
 import {
   ApiError,
   authApi,
@@ -60,6 +66,7 @@ interface State {
 
 type Action =
   | { type: "SESSION"; user: AuthUser; accessToken: string }
+  | { type: "UPDATE_USER"; user: AuthUser }
   | { type: "UNAUTHENTICATED" }
   | { type: "ERROR"; error: string | null }
   | { type: "CLEAR_ERROR" };
@@ -80,6 +87,8 @@ function reducer(state: State, action: Action): State {
         status: "authenticated",
         error: null,
       };
+    case "UPDATE_USER":
+      return { ...state, user: action.user };
     case "UNAUTHENTICATED":
       return { ...state, user: null, accessToken: null, status: "unauthenticated" };
     case "ERROR":
@@ -102,6 +111,7 @@ interface AuthContextValue {
   error: string | null;
   login: (creds: LoginInput) => Promise<AuthUser>;
   register: (input: RegisterInput) => Promise<AuthUser>;
+  updateProfile: (input: UpdateProfileInput) => Promise<AuthUser>;
   logout: () => Promise<void>;
   clearError: () => void;
 }
@@ -186,6 +196,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [applySession],
   );
 
+  const updateProfile = useCallback(async (input: UpdateProfileInput) => {
+    dispatch({ type: "CLEAR_ERROR" });
+    try {
+      const updated = await authApi.updateProfile(input);
+      dispatch({ type: "UPDATE_USER", user: updated });
+      return updated;
+    } catch (err) {
+      dispatch({ type: "ERROR", error: messageFor(err) });
+      throw err;
+    }
+  }, []);
+
   const logout = useCallback(async () => {
     try {
       await authApi.logout();
@@ -207,10 +229,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       error: state.error,
       login,
       register,
+      updateProfile,
       logout,
       clearError,
     }),
-    [state, login, register, logout, clearError],
+    [state, login, register, updateProfile, logout, clearError],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

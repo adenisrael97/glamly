@@ -212,13 +212,30 @@ export default function StylistLayout({ children }: { children: ReactNode }) {
 
   // Redirect if not authenticated or not a stylist. The login route is "/Login"
   // (the (auth) route group adds no path segment) — "/auth/login" would 404.
+  // Additionally, stylists whose storefront is not APPROVED (pending/suspended/
+  // rejected) are confined to /studio/pending so they can't use the working
+  // studio. We only redirect on an EXPLICIT non-approved status to avoid a flash
+  // redirect before the user object resolves (the API is the real gate anyway).
   useEffect(() => {
     if (status === "unauthenticated") {
       router.replace("/Login");
-    } else if (status === "authenticated" && user?.role !== "stylist") {
-      router.replace("/dashboard");
+      return;
     }
-  }, [status, user, router]);
+    if (status !== "authenticated") return;
+    if (user?.role !== "stylist") {
+      router.replace("/dashboard");
+      return;
+    }
+    const blocked =
+      user?.stylistStatus === "PENDING_APPROVAL" ||
+      user?.stylistStatus === "SUSPENDED" ||
+      user?.stylistStatus === "REJECTED";
+    if (blocked && pathname !== "/studio/pending") {
+      router.replace("/studio/pending");
+    } else if (!blocked && pathname === "/studio/pending") {
+      router.replace("/studio");
+    }
+  }, [status, user, pathname, router]);
 
   // Close mobile menu on route change. Use startTransition so the setState
   // call is not synchronous inside the effect body (react-hooks/set-state-in-effect).
