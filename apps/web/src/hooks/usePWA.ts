@@ -29,21 +29,23 @@ export interface PWAState {
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
 export function usePWA(): PWAState {
-  const [isOnline, setIsOnline] = useState(
-    typeof navigator !== "undefined" ? navigator.onLine : true
-  );
+  const [isOnline, setIsOnline] = useState(true);
   const [updateReady, setUpdateReady] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [installable, setInstallable] = useState(false);
   const [syncedOfflineRequest, setSyncedOfflineRequest] = useState(false);
+  const [isInstalled, setIsInstalled] = useState(false);
 
-  const isInstalled =
-    typeof window !== "undefined" &&
-    (window.matchMedia("(display-mode: standalone)").matches ||
-      (navigator as { standalone?: boolean }).standalone === true);
-
-  // Online / offline
+  // Online / offline + installed state are derived from browser-only globals.
+  // Initialize to server-safe defaults and update once mounted to avoid
+  // hydration mismatch between server and client render.
   useEffect(() => {
+    setIsOnline(navigator.onLine);
+    setIsInstalled(
+      window.matchMedia("(display-mode: standalone)").matches ||
+        (navigator as { standalone?: boolean }).standalone === true,
+    );
+
     const up = () => setIsOnline(true);
     const down = () => setIsOnline(false);
     window.addEventListener("online", up);

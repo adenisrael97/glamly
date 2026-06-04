@@ -57,7 +57,6 @@ self.addEventListener("install", (event) => {
       .then((cache) =>
         Promise.allSettled(SHELL_URLS.map((url) => cache.add(url).catch(() => null)))
       )
-      .then(() => self.skipWaiting())
   );
 });
 
@@ -95,6 +94,10 @@ self.addEventListener("fetch", (event) => {
 
   // --- API mutations: network-only + Background Sync queue ---
   if (API_PATTERN.test(url.pathname) && !["GET", "HEAD"].includes(request.method)) {
+    if (url.pathname.startsWith("/api/v1/auth")) {
+      event.respondWith(fetch(request));
+      return;
+    }
     event.respondWith(networkOnlyWithSync(request));
     return;
   }
