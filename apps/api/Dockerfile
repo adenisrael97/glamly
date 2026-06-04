@@ -68,4 +68,4 @@ EXPOSE 4000
 
 # Run pending migrations, then start the API.
 # The prisma CLI is a production dependency, so node_modules/.bin/prisma exists.
-CMD ["sh", "-c", "node node_modules/.bin/prisma migrate deploy && node dist/index.js"]
+CMD ["sh", "-c", "node_modules/.bin/prisma migrate deploy && node dist/index.js"]
