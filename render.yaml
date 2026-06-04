@@ -97,7 +97,7 @@ services:
 
 databases:
   - name: glamly-postgres
-    plan: starter
+    plan: free
     databaseName: glamly
     user: glamly
     region: oregon
