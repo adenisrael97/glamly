@@ -2,6 +2,7 @@
 
 import useSWR from "swr";
 import { adminApi } from "@/lib/api/admin";
+import { useAuth } from "@/context/AuthContext";
 import { Skeleton } from "@/components/ui/Skeleton";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -201,8 +202,12 @@ function RevenueChart({ data }: { data: RevenueMonth[] }) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AdminDashboardPage() {
+  const { status } = useAuth();
+
+  // Null key suspends SWR until the session is confirmed so the first fetch
+  // goes out with a valid access token — no 401 → refresh → retry on mount.
   const { data, isLoading, error } = useSWR<AnalyticsData>(
-    "admin/analytics",
+    status === "authenticated" ? "admin/analytics" : null,
     () => adminApi.getAnalytics() as Promise<AnalyticsData>,
     { revalidateOnFocus: false },
   );

@@ -219,11 +219,24 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, logout, status } = useAuth();
   const overlayRef = useRef<HTMLDivElement>(null);
 
+  // When the session expires mid-session (access token refresh fails), the auth
+  // context fires onSessionExpired → dispatches UNAUTHENTICATED and clears the
+  // role hint cookie. Without this effect the user would stay on a broken admin
+  // page (SWR showing errors) until a Next.js navigation re-triggers the
+  // middleware, which would then redirect. This effect does it immediately.
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.replace("/Login");
+    }
+  }, [status, router]);
+
+  // Only poll for pending stylist count once the session is confirmed so we
+  // don't fire an unnecessary 401 → refresh cycle on every page load.
   const { data: pendingData } = useSWR<PendingCountData>(
-    "admin/pending-count",
+    status === "authenticated" ? "admin/pending-count" : null,
     () => adminApi.getPendingCount() as Promise<PendingCountData>,
     { refreshInterval: 60_000 },
   );
