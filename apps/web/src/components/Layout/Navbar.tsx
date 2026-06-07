@@ -25,7 +25,7 @@ const contactInfo = {
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, logout, loading: authLoading } = useAuth();
+  const { user, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false); // mobile menu
   const [scrolled, setScrolled] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false); // desktop dropdown
@@ -221,13 +221,19 @@ export default function Navbar() {
 
             {/* CTA / Auth */}
             <div className="hidden lg:flex items-center gap-3 ml-4">
-              {!authLoading && !user ? (
+              {!user ? (
                 <>
                   <Link
                     href="/Login"
                     className="px-4 py-2 rounded-lg border border-white/30 text-white text-sm font-semibold hover:bg-white/10 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
                   >
                     Sign in
+                  </Link>
+                  <Link
+                    href="/register"
+                    className="px-4 py-2 rounded-lg border border-purple-400 text-purple-200 text-sm font-semibold hover:bg-purple-600/30 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400"
+                  >
+                    Create account
                   </Link>
                   <Link
                     href="/book-appointment"
@@ -237,7 +243,7 @@ export default function Navbar() {
                     Book Now 📅
                   </Link>
                 </>
-              ) : !authLoading && user ? (
+              ) : user ? (
                 <>
                   <Link
                     href="/book-appointment"

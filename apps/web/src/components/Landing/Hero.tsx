@@ -92,23 +92,41 @@ export default function Hero() {
             Search Services
           </button>
         </form>
-        {/* Action Buttons */}
-        <div className="flex flex-col md:flex-row gap-4 mt-8 w-full justify-center">
+        {/* Primary auth CTAs */}
+        <div className="flex flex-col sm:flex-row gap-3 mt-8 w-full justify-center">
+          <Link
+            href="/register"
+            className="flex-1 sm:flex-none bg-yellow-400 text-black font-bold px-10 py-3 rounded-lg shadow-lg border-2 border-yellow-400 hover:bg-yellow-500 hover:border-yellow-500 transition-colors duration-200 text-lg text-center"
+          >
+            Get Started — It&apos;s Free
+          </Link>
+          <Link
+            href="/Login"
+            className="flex-1 sm:flex-none bg-white/10 backdrop-blur-sm text-white font-bold px-10 py-3 rounded-lg shadow-lg border-2 border-white/40 hover:bg-white/20 hover:border-white/60 transition-colors duration-200 text-lg text-center"
+          >
+            Sign In
+          </Link>
+        </div>
+
+        {/* Secondary discovery links */}
+        <div className="flex flex-wrap gap-3 mt-4 justify-center">
           <Link
             href="/services"
-            className="flex-1 md:flex-none bg-yellow-400 text-black font-bold px-8 py-3 rounded-lg shadow-lg border-2 border-yellow-400 hover:bg-yellow-500 hover:border-yellow-500 transition-colors duration-200 text-lg text-center flex items-center justify-center"
+            className="text-yellow-300 text-sm font-medium hover:text-yellow-100 underline underline-offset-2 transition-colors"
           >
             Browse Services
           </Link>
+          <span className="text-white/30 text-sm">·</span>
           <Link
             href="/stylist-register"
-            className="flex-1 md:flex-none bg-purple-600 text-white font-bold px-8 py-3 rounded-lg shadow-lg border-2 border-purple-600 hover:bg-purple-700 hover:border-purple-700 transition-colors duration-200 text-lg text-center flex items-center justify-center"
+            className="text-yellow-300 text-sm font-medium hover:text-yellow-100 underline underline-offset-2 transition-colors"
           >
             Become a Stylist
           </Link>
+          <span className="text-white/30 text-sm">·</span>
           <Link
             href="/gift-service"
-            className="flex-1 md:flex-none bg-white/10 backdrop-blur-sm text-white font-bold px-8 py-3 rounded-lg shadow-lg border-2 border-white/40 hover:bg-white/20 hover:border-white/60 transition-colors duration-200 text-lg text-center flex items-center justify-center"
+            className="text-yellow-300 text-sm font-medium hover:text-yellow-100 underline underline-offset-2 transition-colors"
           >
             🎁 Gift a Service
           </Link>

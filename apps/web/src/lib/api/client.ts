@@ -120,7 +120,7 @@ async function performRefresh(): Promise<AuthResult | null> {
     const res = await axios.post<ApiResponse<AuthResult>>(
       `${API_BASE_URL}/auth/refresh`,
       {},
-      { withCredentials: true },
+      { withCredentials: true, timeout: 5000 },
     );
     const result = res.data.data;
     accessToken = result.accessToken;
