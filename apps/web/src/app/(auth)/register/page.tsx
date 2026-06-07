@@ -82,22 +82,33 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    // Stylists hand off to a dedicated multi-step form that collects password,
+    // phone, specialty, location, and priceFrom. Only validate name + email here
+    // (password is re-entered on the next page and never sent via URL).
+    if (role === "stylist") {
+      const errs: Record<string, string> = {};
+      if (!fields.name.trim()) errs.name = "Full name is required";
+      else if (fields.name.trim().length < 2) errs.name = "Name is too short";
+      if (!fields.email.trim()) errs.email = "Email is required";
+      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fields.email))
+        errs.email = "Enter a valid email";
+      if (Object.keys(errs).length) {
+        setErrors(errs);
+        return;
+      }
+      router.push(
+        `/stylist-register?name=${encodeURIComponent(fields.name.trim())}&email=${encodeURIComponent(fields.email.trim())}`,
+      );
+      return;
+    }
+
     const errs = validateRegister(fields, role);
     if (Object.keys(errs).length) {
       setErrors(errs);
       return;
     }
     setErrors({});
-
-    // Stylists need a full storefront profile (specialty/location/priceFrom) the
-    // API requires — collect it on the dedicated page rather than registering a
-    // half-built account here. Password is re-entered there (never sent via URL).
-    if (role === "stylist") {
-      router.push(
-        `/stylist-register?name=${encodeURIComponent(fields.name)}&email=${encodeURIComponent(fields.email)}`,
-      );
-      return;
-    }
 
     setSubmitting(true);
     try {
@@ -282,8 +293,9 @@ export default function RegisterPage() {
                   {errors.email && <p id="reg-email-error" className="text-xs text-red-500" role="alert">{errors.email}</p>}
                 </div>
 
-                {/* Password */}
-                <div className="flex flex-col gap-1">
+                {/* Password & confirm — only needed for the "user" path; stylists set
+                    their password on the dedicated /stylist-register page */}
+                {role === "user" && <div className="flex flex-col gap-1">
                   <label htmlFor="reg-password" className="text-sm font-medium text-gray-700">
                     Password <span className="text-red-500" aria-hidden="true">*</span>
                   </label>
@@ -335,10 +347,9 @@ export default function RegisterPage() {
                     </div>
                   )}
                   {errors.password && <p id="reg-password-error" className="text-xs text-red-500" role="alert">{errors.password}</p>}
-                </div>
+                </div>}
 
-                {/* Confirm password */}
-                <div className="flex flex-col gap-1">
+                {role === "user" && <div className="flex flex-col gap-1">
                   <label htmlFor="reg-confirm" className="text-sm font-medium text-gray-700">
                     Confirm password <span className="text-red-500" aria-hidden="true">*</span>
                   </label>
@@ -365,7 +376,7 @@ export default function RegisterPage() {
                     </button>
                   </div>
                   {errors.confirm && <p id="reg-confirm-error" className="text-xs text-red-500" role="alert">{errors.confirm}</p>}
-                </div>
+                </div>}
 
                 {/* Terms */}
                 <p className="text-xs text-gray-400 mt-1">
