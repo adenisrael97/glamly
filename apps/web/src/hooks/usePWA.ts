@@ -29,23 +29,29 @@ export interface PWAState {
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
 export function usePWA(): PWAState {
-  const [isOnline, setIsOnline] = useState(true);
+  // Lazy initialisers read browser-only globals (navigator, window) which don't
+  // exist on the server. The typeof guards return the safe server-side default so
+  // SSR renders consistently; on the client the actual values are used from the
+  // very first render, avoiding the need to call setState inside an effect body
+  // (which the react-hooks/set-state-in-effect rule disallows).
+  const [isOnline, setIsOnline] = useState(() =>
+    typeof navigator !== "undefined" ? navigator.onLine : true
+  );
+  const [isInstalled, setIsInstalled] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return (
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (navigator as { standalone?: boolean }).standalone === true
+    );
+  });
   const [updateReady, setUpdateReady] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [installable, setInstallable] = useState(false);
   const [syncedOfflineRequest, setSyncedOfflineRequest] = useState(false);
-  const [isInstalled, setIsInstalled] = useState(false);
 
-  // Online / offline + installed state are derived from browser-only globals.
-  // Initialize to server-safe defaults and update once mounted to avoid
-  // hydration mismatch between server and client render.
+  // Subscribe to online/offline changes. Initial values are handled by the lazy
+  // initialisers above so no synchronous setState is needed here.
   useEffect(() => {
-    setIsOnline(navigator.onLine);
-    setIsInstalled(
-      window.matchMedia("(display-mode: standalone)").matches ||
-        (navigator as { standalone?: boolean }).standalone === true,
-    );
-
     const up = () => setIsOnline(true);
     const down = () => setIsOnline(false);
     window.addEventListener("online", up);
