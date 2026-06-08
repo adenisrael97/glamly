@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import type { BookingStatus } from "@glamly/shared";
 import { ApiError, paymentsApi, bookingsApi, reviewsApi } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
@@ -100,18 +100,66 @@ function ReviewForm({ bookingId, onDone }: { bookingId: string; onDone: () => vo
   );
 }
 
-// ── Page ────────────────────────────────────────────────────────────────────────
+// ── Loading skeleton ──────────────────────────────────────────────────────────────
 
-export default function BookingDetailPage() {
+function LoadingSkeleton() {
+  return (
+    <main className="min-h-screen bg-gray-50 py-10 px-4">
+      <div className="max-w-2xl mx-auto animate-pulse">
+        <div className="h-4 w-24 bg-gray-200 rounded mb-6" />
+        <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
+          <div className="bg-purple-200 h-24 w-full" />
+          <div className="p-6 space-y-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="flex justify-between">
+                <div className="h-4 w-20 bg-gray-100 rounded" />
+                <div className="h-4 w-32 bg-gray-100 rounded" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+// ── Page content (requires auth — extracted so Suspense works for useSearchParams) ──
+
+function BookingDetailContent() {
   const params = useParams<{ id: string }>();
   const id = params.id;
   const searchParams = useSearchParams();
-  const { accessToken } = useAuth();
+  const router = useRouter();
 
-  const { booking, isLoading, isError, mutate } = useBooking(id);
+  // Destructure status so we can gate the API call until the session is restored.
+  // After a cross-site redirect (Paystack callback) the in-memory access token is
+  // gone; the AuthContext effect will silently restore it from the refresh cookie.
+  // Firing useBooking before that resolves triggers a 401 → the refresh interceptor
+  // fires → if the refresh fails for any reason, onSessionExpired clears the role
+  // cookie → middleware blocks the next navigation → user lands on Login.
+  const { accessToken, status } = useAuth();
+
+  const { booking, isLoading, isError, mutate } = useBooking(
+    id,
+    // Only fetch once the session is confirmed — avoids the 401 race on
+    // page loads that follow a cross-site redirect (e.g. payment callbacks).
+    status === "authenticated",
+  );
+
   const [payError, setPayError] = useState<string | null>(null);
   const [paying, setPaying] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+
+  // Client-side auth guard — fires after render so the skeleton shows immediately.
+  // Primary guard is middleware (role cookie). This catches the edge case where the
+  // refresh token is genuinely expired after a cross-site redirect, which would
+  // leave the user on a broken page. Use replace so Login doesn't stack on the
+  // booking URL in history, which would create a back-button redirect loop.
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.replace(`/Login?next=/booking/${id}`);
+    }
+  }, [status, id, router]);
 
   // Live updates: a webhook-confirmed payment flips the booking to CONFIRMED.
   useRealtime(accessToken, {
@@ -125,6 +173,9 @@ export default function BookingDetailPage() {
 
   // If we returned from the Paystack-hosted checkout (?reference=...), poll the
   // payment status a few times and revalidate the booking once it resolves.
+  // Polling runs independently of auth state — the interceptor will refresh the
+  // token if needed and the mutate() call is safe even before auth resolves
+  // (SWR no-ops on a null key).
   const reference = searchParams.get("reference");
   useEffect(() => {
     if (!reference) return;
@@ -176,8 +227,14 @@ export default function BookingDetailPage() {
     }
   }, [id, mutate]);
 
+  // Show loading skeleton while the session is being restored from the refresh
+  // cookie (the common case after a cross-site redirect like a payment callback).
+  if (status === "loading") {
+    return <LoadingSkeleton />;
+  }
+
   if (isLoading) {
-    return <main className="min-h-screen bg-gray-50 py-20 text-center text-purple-600 animate-pulse">Loading booking…</main>;
+    return <LoadingSkeleton />;
   }
 
   if (isError || !booking) {
@@ -267,11 +324,17 @@ export default function BookingDetailPage() {
                 <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-4 py-3">
                   Your appointment is confirmed. See you soon! 🎉
                 </p>
+                <Link
+                  href="/dashboard"
+                  className="mt-3 inline-block px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-xl transition-colors"
+                >
+                  View all my bookings
+                </Link>
                 <button
                   type="button"
                   onClick={handleCancel}
                   disabled={cancelling}
-                  className="mt-3 text-sm font-semibold text-gray-500 hover:text-red-600 transition-colors"
+                  className="mt-2 block w-full text-sm font-semibold text-gray-500 hover:text-red-600 transition-colors"
                 >
                   {cancelling ? "Cancelling…" : "Cancel booking"}
                 </button>
@@ -279,9 +342,17 @@ export default function BookingDetailPage() {
             )}
 
             {booking.status === "CANCELLED" && (
-              <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
-                This booking was cancelled{booking.cancellationReason ? `: ${booking.cancellationReason}` : "."}
-              </p>
+              <div className="flex flex-col gap-3">
+                <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+                  This booking was cancelled{booking.cancellationReason ? `: ${booking.cancellationReason}` : "."}
+                </p>
+                <Link
+                  href="/dashboard"
+                  className="text-center px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-xl transition-colors"
+                >
+                  View all my bookings
+                </Link>
+              </div>
             )}
 
             {booking.status === "COMPLETED" && <ReviewForm bookingId={booking.id} onDone={() => void mutate()} />}
@@ -289,5 +360,18 @@ export default function BookingDetailPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+// ── Page ─────────────────────────────────────────────────────────────────────────
+//
+// Suspense is required here because BookingDetailContent calls useSearchParams().
+// Without a boundary Next.js 15 will suspend the entire route during SSR.
+
+export default function BookingDetailPage() {
+  return (
+    <Suspense fallback={<LoadingSkeleton />}>
+      <BookingDetailContent />
+    </Suspense>
   );
 }

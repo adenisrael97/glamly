@@ -1,8 +1,11 @@
 import type {
   AuthResult,
   AuthUser,
+  ChangePasswordInput,
+  ForgotPasswordInput,
   LoginInput,
   RegisterInput,
+  ResetPasswordInput,
   UpdateProfileInput,
 } from "@glamly/shared";
 import { client, unwrap, setAccessToken } from "./client";
@@ -33,6 +36,11 @@ export const authApi = {
     return unwrap<AuthUser>(client.patch("/auth/me", input));
   },
 
+  /** Change the signed-in user's password (verifies the current one server-side). */
+  changePassword(input: ChangePasswordInput): Promise<void> {
+    return unwrap<void>(client.post("/auth/me/password", input));
+  },
+
   /**
    * Upload a new avatar for the authenticated user.
    * Sends multipart/form-data; Axios detects FormData and sets the correct
@@ -46,5 +54,22 @@ export const authApi = {
         headers: { "Content-Type": "multipart/form-data" },
       }),
     );
+  },
+
+  /** Request a password reset email. Always resolves (server never reveals if email exists). */
+  forgotPassword(input: ForgotPasswordInput): Promise<void> {
+    return unwrap<void>(client.post("/auth/forgot-password", input));
+  },
+
+  /** Validate a reset token before showing the reset form. */
+  validateResetToken(token: string): Promise<{ valid: boolean; maskedEmail?: string }> {
+    return unwrap<{ valid: boolean; maskedEmail?: string }>(
+      client.get("/auth/reset-password", { params: { token } }),
+    );
+  },
+
+  /** Consume a reset token and set the new password. */
+  resetPassword(input: ResetPasswordInput): Promise<void> {
+    return unwrap<void>(client.post("/auth/reset-password", input));
   },
 };

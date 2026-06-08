@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { randomUUID, randomBytes, createHash } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { User } from "@prisma/client";
 import {
@@ -6,8 +6,11 @@ import {
   dbRoleToApiRole,
   ROLES,
   type AuthUser,
+  type ChangePasswordInput,
+  type ForgotPasswordInput,
   type LoginInput,
   type RegisterInput,
+  type ResetPasswordInput,
   type Role,
   type StylistApprovalStatus,
   type UpdateProfileInput,
@@ -25,7 +28,10 @@ import {
 import { refreshTokenStore } from "../repositories/refreshTokenStore";
 import {
   EmailTakenError,
+  IncorrectPasswordError,
   InvalidCredentialsError,
+  ResetTokenExpiredError,
+  ResetTokenInvalidError,
   SessionExpiredError,
 } from "../errors/AppError";
 import {
@@ -36,6 +42,7 @@ import {
   TokenError,
   verifyRefreshToken,
 } from "../lib/jwt";
+import { config } from "../config";
 import { logger } from "../lib/logger";
 import { notificationsService } from "./notifications.service";
 
@@ -297,6 +304,179 @@ export const authService = {
     });
 
     return resolveAuthUser(user);
+  },
+
+  /**
+   * Initiate a password reset. Generates a cryptographically secure token,
+   * stores its SHA-256 hash, and fires a reset email.
+   *
+   * ALWAYS responds successfully, even when the email is not registered.
+   * This prevents user enumeration: an attacker cannot determine which addresses
+   * have accounts by checking whether the request succeeded or failed.
+   *
+   * The raw token (not the hash) travels in the email link. If the database is
+   * compromised, the stored hashes are useless without the raw tokens.
+   */
+  async forgotPassword(input: ForgotPasswordInput, ctx: AuthContext = {}): Promise<void> {
+    const user = await authRepository.findByEmail(input.email);
+
+    if (!user) {
+      // Log at debug level only — no PII in the message, just that we no-oped.
+      logger.debug("Forgot-password request for unknown email — silently ignored");
+      return;
+    }
+
+    // 32 random bytes → 64-char hex string. Sufficient entropy for a one-time
+    // token that expires in 1 hour and is stored as a SHA-256 hash.
+    const rawToken = randomBytes(32).toString("hex");
+    const tokenHash = createHash("sha256").update(rawToken).digest("hex");
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    await authRepository.savePasswordResetToken(user.id, tokenHash, expiresAt);
+
+    await auditRepository.record({
+      userId: user.id,
+      action: "PASSWORD_RESET_REQUESTED",
+      entityType: "User",
+      entityId: user.id,
+      ipAddress: ctx.ipAddress,
+    });
+
+    const resetUrl = `${config.WEB_APP_URL}/reset-password?token=${rawToken}`;
+
+    // Best-effort; a failed email never breaks the caller (§11).
+    void notificationsService.sendPasswordReset({
+      name: user.name,
+      email: user.email,
+      resetUrl,
+    });
+  },
+
+  /**
+   * Validate a reset token without consuming it (GET before showing the form).
+   * Returns the masked email so the UI can display "resetting password for ****@example.com".
+   * Throws if the token is invalid or expired.
+   */
+  async validateResetToken(rawToken: string): Promise<{ maskedEmail: string }> {
+    const tokenHash = createHash("sha256").update(rawToken).digest("hex");
+    const record = await authRepository.findPasswordResetByTokenHash(tokenHash);
+
+    if (!record || record.usedAt) throw new ResetTokenInvalidError();
+    if (record.expiresAt < new Date()) throw new ResetTokenExpiredError();
+
+    const user = await authRepository.findActiveById(record.userId);
+    if (!user) throw new ResetTokenInvalidError();
+
+    // Mask the email: show first char + *** + @domain (e.g. a***@example.com).
+    const [local, domain] = user.email.split("@") as [string, string];
+    const maskedEmail = `${local[0]}***@${domain}`;
+    return { maskedEmail };
+  },
+
+  /**
+   * Consume a reset token and update the user's password.
+   *
+   * On success:
+   *   1. Token is marked used + password hash updated, ATOMICALLY in one DB
+   *      transaction — single-use, and a partial failure can't leave the token
+   *      consumed with an unchanged password (§11).
+   *   2. ALL active sessions are revoked (a stolen cookie after a reset is
+   *      useless). This is an external side effect, so it runs AFTER the
+   *      transaction commits.
+   *   3. Audit event recorded.
+   */
+  async resetPassword(
+    input: ResetPasswordInput,
+    ctx: AuthContext = {},
+  ): Promise<void> {
+    const tokenHash = createHash("sha256").update(input.token).digest("hex");
+    const record = await authRepository.findPasswordResetByTokenHash(tokenHash);
+
+    if (!record || record.usedAt) throw new ResetTokenInvalidError();
+    if (record.expiresAt < new Date()) throw new ResetTokenExpiredError();
+
+    const user = await authRepository.findActiveById(record.userId);
+    if (!user) throw new ResetTokenInvalidError();
+
+    const passwordHash = await bcrypt.hash(input.password, BCRYPT_COST);
+
+    // Atomic consume-and-update. Returns false if a concurrent request already
+    // consumed this token between our read above and this write — treat the loser
+    // as an invalid (already-used) token.
+    const consumed = await authRepository.consumeResetAndUpdatePassword(
+      record.id,
+      record.userId,
+      passwordHash,
+    );
+    if (!consumed) throw new ResetTokenInvalidError();
+
+    // Revoke all live sessions so a stolen cookie is useless post-reset. After
+    // the commit: an external (Redis) side effect never runs inside the txn (§11).
+    await refreshTokenStore.revokeAllForUser(record.userId);
+
+    await auditRepository.record({
+      userId: record.userId,
+      action: "PASSWORD_RESET_COMPLETED",
+      entityType: "User",
+      entityId: record.userId,
+      ipAddress: ctx.ipAddress,
+    });
+
+    logger.info("Password reset completed", { userId: record.userId });
+  },
+
+  /**
+   * Change the password of an already-authenticated user. The current password is
+   * verified first (proof of presence). On success every OTHER session is revoked
+   * so a stolen cookie on another device is killed, while the device making the
+   * change stays signed in (identified by `currentRefreshToken`). The JWT-based
+   * access tokens remain valid until they expire (~15m); the session whitelist is
+   * the revocation point.
+   */
+  async changePassword(
+    userId: string,
+    input: ChangePasswordInput,
+    ctx: AuthContext & { currentRefreshToken?: string } = {},
+  ): Promise<void> {
+    const user = await authRepository.findActiveById(userId);
+    if (!user) throw new SessionExpiredError();
+
+    const matches = await bcrypt.compare(input.currentPassword, user.passwordHash);
+    if (!matches) {
+      await auditRepository.record({
+        userId,
+        action: "PASSWORD_CHANGE_FAILED",
+        entityType: "User",
+        entityId: userId,
+        ipAddress: ctx.ipAddress,
+      });
+      throw new IncorrectPasswordError();
+    }
+
+    const passwordHash = await bcrypt.hash(input.newPassword, BCRYPT_COST);
+    await authRepository.updatePasswordHash(userId, passwordHash);
+
+    // Keep the current device signed in; log every other session out. A
+    // missing/invalid current token degrades to revoking all (fail safe).
+    let keepJti: string | undefined;
+    if (ctx.currentRefreshToken) {
+      try {
+        keepJti = verifyRefreshToken(ctx.currentRefreshToken).jti;
+      } catch (err) {
+        if (!(err instanceof TokenError)) throw err;
+      }
+    }
+    await refreshTokenStore.revokeAllForUserExcept(userId, keepJti);
+
+    await auditRepository.record({
+      userId,
+      action: "PASSWORD_CHANGED",
+      entityType: "User",
+      entityId: userId,
+      ipAddress: ctx.ipAddress,
+    });
+
+    logger.info("Password changed", { userId });
   },
 };
 

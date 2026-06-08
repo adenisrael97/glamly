@@ -1,0 +1,5 @@
+
+# Serwist (PWA) generated service worker — built from src/app/sw.ts on `next build`
+public/sw.js
+public/sw.js.map
+public/swe-worker-*.js

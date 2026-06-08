@@ -23,13 +23,24 @@ vi.mock("../repositories/auth.repository", () => {
     deletedAt: Date | null;
   }
 
+  interface FakeReset {
+    id: string;
+    userId: string;
+    tokenHash: string;
+    expiresAt: Date;
+    usedAt: Date | null;
+    createdAt: Date;
+  }
+
   const usersById = new Map<string, FakeUser>();
   const idByEmail = new Map<string, string>();
   const stylistProfiles = new Map<string, unknown>();
+  const resetsById = new Map<string, FakeReset>();
+  const resetsByHash = new Map<string, string>(); // tokenHash -> reset id
   let seq = 0;
 
   return {
-    __store: { usersById, idByEmail, stylistProfiles },
+    __store: { usersById, idByEmail, stylistProfiles, resetsById, resetsByHash },
     isUniqueConstraintError: (err: unknown) =>
       Boolean(err && typeof err === "object" && "__unique" in err),
     authRepository: {
@@ -85,6 +96,50 @@ vi.mock("../repositories/auth.repository", () => {
       // Stylist table, so report null (resolveAuthUser tolerates it). Without
       // this stub, registering/logging in as a stylist throws "not a function".
       getStylistStatusByUserId: vi.fn(async () => null),
+
+      // ── Password reset (stateful in-memory fakes) ──────────────────────────
+      savePasswordResetToken: vi.fn(
+        async (userId: string, tokenHash: string, expiresAt: Date) => {
+          // Mirror the real repo: one active token per user — drop any prior.
+          for (const [id, r] of resetsById) {
+            if (r.userId === userId) {
+              resetsById.delete(id);
+              resetsByHash.delete(r.tokenHash);
+            }
+          }
+          const rec: FakeReset = {
+            id: `reset_${++seq}`,
+            userId,
+            tokenHash,
+            expiresAt,
+            usedAt: null,
+            createdAt: new Date(),
+          };
+          resetsById.set(rec.id, rec);
+          resetsByHash.set(tokenHash, rec.id);
+          return { ...rec };
+        },
+      ),
+      findPasswordResetByTokenHash: vi.fn(async (tokenHash: string) => {
+        const id = resetsByHash.get(tokenHash);
+        const r = id ? resetsById.get(id) : undefined;
+        return r ? { ...r } : null;
+      }),
+      consumeResetAndUpdatePassword: vi.fn(
+        async (resetId: string, userId: string, passwordHash: string) => {
+          const r = resetsById.get(resetId);
+          // Conditional single-use guard — mirrors the real updateMany(usedAt: null).
+          if (!r || r.usedAt) return false;
+          r.usedAt = new Date();
+          const u = usersById.get(userId);
+          if (u) u.passwordHash = passwordHash;
+          return true;
+        },
+      ),
+      updatePasswordHash: vi.fn(async (userId: string, passwordHash: string) => {
+        const u = usersById.get(userId);
+        if (u) u.passwordHash = passwordHash;
+      }),
     },
   };
 });
@@ -110,6 +165,15 @@ vi.mock("../repositories/refreshTokenStore", () => {
         for (const jti of userJtis.get(userId) ?? []) owner.delete(jti);
         userJtis.delete(userId);
       }),
+      revokeAllForUserExcept: vi.fn(async (userId: string, keepJti: string | undefined) => {
+        const set = userJtis.get(userId);
+        if (!set) return;
+        for (const jti of [...set]) {
+          if (jti === keepJti) continue;
+          owner.delete(jti);
+          set.delete(jti);
+        }
+      }),
     },
   };
 });
@@ -119,6 +183,7 @@ vi.mock("../repositories/audit.repository", () => ({
 }));
 
 // Imported AFTER the mocks are declared (vi.mock is hoisted regardless).
+import { createHash } from "node:crypto";
 import { authService } from "./auth.service";
 import { authRepository } from "../repositories/auth.repository";
 import * as authRepoModule from "../repositories/auth.repository";
@@ -133,9 +198,22 @@ const repoStore = (
       usersById: Map<string, unknown>;
       idByEmail: Map<string, unknown>;
       stylistProfiles: Map<string, unknown>;
+      resetsById: Map<string, unknown>;
+      resetsByHash: Map<string, unknown>;
     };
   }
 ).__store;
+
+const sha256 = (raw: string): string => createHash("sha256").update(raw).digest("hex");
+
+/** Seed a reset token straight into the fake store and return the raw token. */
+async function seedResetToken(
+  userId: string,
+  { raw = "raw-reset-token", expiresAt = new Date(Date.now() + 60 * 60 * 1000) } = {},
+): Promise<string> {
+  await authRepository.savePasswordResetToken(userId, sha256(raw), expiresAt);
+  return raw;
+}
 
 const userRegistration = {
   role: "user" as const,
@@ -159,6 +237,8 @@ beforeEach(() => {
   repoStore.usersById.clear();
   repoStore.idByEmail.clear();
   repoStore.stylistProfiles.clear();
+  repoStore.resetsById.clear();
+  repoStore.resetsByHash.clear();
 });
 
 afterEach(() => {
@@ -286,5 +366,190 @@ describe("authService.logout", () => {
   it("is a no-op (never throws) when no token is supplied", async () => {
     await expect(authService.logout(undefined)).resolves.toBeUndefined();
     expect(refreshTokenStore.revoke).not.toHaveBeenCalled();
+  });
+});
+
+describe("authService.forgotPassword", () => {
+  it("issues a hashed reset token for a registered email", async () => {
+    const { user } = await authService.register(userRegistration);
+
+    await authService.forgotPassword({ email: userRegistration.email });
+
+    const save = authRepository.savePasswordResetToken as ReturnType<typeof vi.fn>;
+    expect(save).toHaveBeenCalledTimes(1);
+    const [userId, tokenHash, expiresAt] = save.mock.calls[0]!;
+    expect(userId).toBe(user.id);
+    // A SHA-256 hex digest is stored — never the raw token.
+    expect(tokenHash).toMatch(/^[a-f0-9]{64}$/);
+    expect((expiresAt as Date).getTime()).toBeGreaterThan(Date.now());
+  });
+
+  it("silently no-ops for an unknown email (no enumeration, no token)", async () => {
+    await expect(
+      authService.forgotPassword({ email: "ghost@example.com" }),
+    ).resolves.toBeUndefined();
+    expect(authRepository.savePasswordResetToken).not.toHaveBeenCalled();
+  });
+});
+
+describe("authService.validateResetToken", () => {
+  it("returns a masked email for a valid token", async () => {
+    const { user } = await authService.register(userRegistration);
+    const token = await seedResetToken(user.id);
+
+    const { maskedEmail } = await authService.validateResetToken(token);
+    // ada@example.com -> a***@example.com
+    expect(maskedEmail).toBe("a***@example.com");
+  });
+
+  it("rejects an unknown token as INVALID", async () => {
+    await expect(authService.validateResetToken("nope")).rejects.toMatchObject({
+      code: ERROR_CODES.AUTH_RESET_TOKEN_INVALID,
+      statusCode: 400,
+    });
+  });
+
+  it("rejects an expired token as EXPIRED", async () => {
+    const { user } = await authService.register(userRegistration);
+    const token = await seedResetToken(user.id, { expiresAt: new Date(Date.now() - 1000) });
+
+    await expect(authService.validateResetToken(token)).rejects.toMatchObject({
+      code: ERROR_CODES.AUTH_RESET_TOKEN_EXPIRED,
+    });
+  });
+});
+
+describe("authService.resetPassword", () => {
+  const newPassword = "Br4ndNewPass";
+
+  it("sets the new password, revokes sessions, and rejects the old one", async () => {
+    const { user } = await authService.register(userRegistration);
+    const token = await seedResetToken(user.id);
+
+    await authService.resetPassword({
+      token,
+      password: newPassword,
+      confirmPassword: newPassword,
+    });
+
+    // All live sessions are revoked after a reset (stolen-cookie defence).
+    expect(refreshTokenStore.revokeAllForUser).toHaveBeenCalledWith(user.id);
+
+    // New password works; the old one no longer does.
+    await expect(
+      authService.login({ email: userRegistration.email, password: newPassword }),
+    ).resolves.toMatchObject({ user: { email: userRegistration.email } });
+    await expect(
+      authService.login({ email: userRegistration.email, password: userRegistration.password }),
+    ).rejects.toMatchObject({ code: ERROR_CODES.AUTH_INVALID_CREDENTIALS });
+  });
+
+  it("rejects a replay of the same (now-used) token", async () => {
+    const { user } = await authService.register(userRegistration);
+    const token = await seedResetToken(user.id);
+
+    await authService.resetPassword({
+      token,
+      password: newPassword,
+      confirmPassword: newPassword,
+    });
+    // The token is single-use — replaying it fails as INVALID.
+    await expect(
+      authService.resetPassword({
+        token,
+        password: "An0therPass",
+        confirmPassword: "An0therPass",
+      }),
+    ).rejects.toMatchObject({ code: ERROR_CODES.AUTH_RESET_TOKEN_INVALID });
+  });
+
+  it("rejects an expired token without changing the password", async () => {
+    const { user } = await authService.register(userRegistration);
+    const token = await seedResetToken(user.id, { expiresAt: new Date(Date.now() - 1000) });
+
+    await expect(
+      authService.resetPassword({
+        token,
+        password: newPassword,
+        confirmPassword: newPassword,
+      }),
+    ).rejects.toMatchObject({ code: ERROR_CODES.AUTH_RESET_TOKEN_EXPIRED });
+
+    // Original password still valid — the expired attempt was a no-op.
+    await expect(
+      authService.login({ email: userRegistration.email, password: userRegistration.password }),
+    ).resolves.toMatchObject({ user: { email: userRegistration.email } });
+  });
+});
+
+describe("authService.changePassword", () => {
+  const newPassword = "Ch4ngedPass";
+
+  it("changes the password after verifying the current one (old fails, new works)", async () => {
+    const session = await authService.register(userRegistration);
+
+    await authService.changePassword(
+      session.user.id,
+      {
+        currentPassword: userRegistration.password,
+        newPassword,
+        confirmPassword: newPassword,
+      },
+      { currentRefreshToken: session.refreshToken },
+    );
+
+    await expect(
+      authService.login({ email: userRegistration.email, password: newPassword }),
+    ).resolves.toMatchObject({ user: { email: userRegistration.email } });
+    await expect(
+      authService.login({ email: userRegistration.email, password: userRegistration.password }),
+    ).rejects.toMatchObject({ code: ERROR_CODES.AUTH_INVALID_CREDENTIALS });
+  });
+
+  it("rejects a wrong current password with AUTH_INCORRECT_PASSWORD (400, not 401)", async () => {
+    const session = await authService.register(userRegistration);
+
+    await expect(
+      authService.changePassword(session.user.id, {
+        currentPassword: "WrongCurrent1",
+        newPassword,
+        confirmPassword: newPassword,
+      }),
+    ).rejects.toMatchObject({
+      code: ERROR_CODES.AUTH_INCORRECT_PASSWORD,
+      statusCode: 400,
+    });
+
+    // Password unchanged — original still works.
+    await expect(
+      authService.login({ email: userRegistration.email, password: userRegistration.password }),
+    ).resolves.toMatchObject({ user: { email: userRegistration.email } });
+  });
+
+  it("keeps the current session but revokes the user's other sessions", async () => {
+    const first = await authService.register(userRegistration); // device A
+    const second = await authService.login({
+      email: userRegistration.email,
+      password: userRegistration.password,
+    }); // device B
+
+    await authService.changePassword(
+      first.user.id,
+      {
+        currentPassword: userRegistration.password,
+        newPassword,
+        confirmPassword: newPassword,
+      },
+      { currentRefreshToken: first.refreshToken },
+    );
+
+    // Device A (the one that changed the password) stays signed in.
+    await expect(authService.refresh(first.refreshToken)).resolves.toMatchObject({
+      accessToken: expect.any(String),
+    });
+    // Device B is logged out.
+    await expect(authService.refresh(second.refreshToken)).rejects.toMatchObject({
+      code: ERROR_CODES.AUTH_SESSION_EXPIRED,
+    });
   });
 });

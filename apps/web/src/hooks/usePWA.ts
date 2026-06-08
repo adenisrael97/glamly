@@ -12,14 +12,10 @@ interface BeforeInstallPromptEvent extends Event {
 export interface PWAState {
   /** True while online */
   isOnline: boolean;
-  /** True when a waiting SW exists (update available) */
-  updateReady: boolean;
   /** True when the app can be installed (beforeinstallprompt fired) */
   installable: boolean;
   /** Call to trigger the browser's native install dialog */
   promptInstall(): Promise<boolean>;
-  /** Call to activate the waiting SW and reload */
-  applyUpdate(): void;
   /** True if we're running in standalone (installed) mode */
   isInstalled: boolean;
   /** True if a queued request has successfully synced */
@@ -44,7 +40,6 @@ export function usePWA(): PWAState {
       (navigator as { standalone?: boolean }).standalone === true
     );
   });
-  const [updateReady, setUpdateReady] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [installable, setInstallable] = useState(false);
   const [syncedOfflineRequest, setSyncedOfflineRequest] = useState(false);
@@ -80,31 +75,27 @@ export function usePWA(): PWAState {
     return () => window.removeEventListener("appinstalled", handler);
   }, []);
 
-  // SW update detection
+  // Service-worker bridge: silently reload onto a new version, and surface
+  // background-sync completions. Registration itself is handled by Serwist
+  // (next.config `register: true`); this hook only reacts to the SW lifecycle.
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
 
-    navigator.serviceWorker.ready.then((reg) => {
-      // Catch an already-waiting worker on mount
-      if (reg.waiting) setUpdateReady(true);
-
-      reg.addEventListener("updatefound", () => {
-        const installing = reg.installing;
-        if (!installing) return;
-        installing.addEventListener("statechange", () => {
-          if (installing.state === "installed" && navigator.serviceWorker.controller) {
-            setUpdateReady(true);
-          }
-        });
-      });
-    });
-
-    // React to controller change (fired after skipWaiting completes)
-    navigator.serviceWorker.addEventListener("controllerchange", () => {
+    // Serwist's worker uses skipWaiting + clientsClaim, so a new deploy's worker
+    // activates and takes control immediately, firing `controllerchange`. Reload
+    // once so the page swaps to the new assets — but ONLY when the page was
+    // already controlled by an older worker (a genuine update), never on the
+    // first-ever install claiming an uncontrolled page. `refreshing` guards loops.
+    const hadController = navigator.serviceWorker.controller !== null;
+    let refreshing = false;
+    const onControllerChange = () => {
+      if (refreshing || !hadController) return;
+      refreshing = true;
       window.location.reload();
-    });
+    };
+    navigator.serviceWorker.addEventListener("controllerchange", onControllerChange);
 
-    // Listen for background-sync completion messages from the SW
+    // Background-sync completion messages from the SW (offline mutations replayed).
     const onMessage = (event: MessageEvent) => {
       if (event.data?.type === "SYNC_COMPLETE") {
         setSyncedOfflineRequest(true);
@@ -112,7 +103,11 @@ export function usePWA(): PWAState {
       }
     };
     navigator.serviceWorker.addEventListener("message", onMessage);
-    return () => navigator.serviceWorker.removeEventListener("message", onMessage);
+
+    return () => {
+      navigator.serviceWorker.removeEventListener("controllerchange", onControllerChange);
+      navigator.serviceWorker.removeEventListener("message", onMessage);
+    };
   }, []);
 
   const promptInstall = useCallback(async (): Promise<boolean> => {
@@ -124,11 +119,5 @@ export function usePWA(): PWAState {
     return outcome === "accepted";
   }, [deferredPrompt]);
 
-  const applyUpdate = useCallback(() => {
-    navigator.serviceWorker.ready.then((reg) => {
-      reg.waiting?.postMessage({ type: "SKIP_WAITING" });
-    });
-  }, []);
-
-  return { isOnline, updateReady, installable, promptInstall, applyUpdate, isInstalled, syncedOfflineRequest };
+  return { isOnline, installable, promptInstall, isInstalled, syncedOfflineRequest };
 }

@@ -35,7 +35,11 @@ export function middleware(req: NextRequest): NextResponse {
   if (matches(pathname, ADMIN_PREFIXES)) {
     if (!isAuthed) {
       const url = new URL("/Login", req.url);
-      url.searchParams.set("next", pathname);
+      // Preserve the full URL (path + search) so the user lands back on the
+      // exact page they requested after logging in — including any query params
+      // such as ?reference=... from a Paystack payment callback.
+      const next = req.nextUrl.search ? `${pathname}${req.nextUrl.search}` : pathname;
+      url.searchParams.set("next", next);
       return NextResponse.redirect(url);
     }
     if (!isAdmin) {
@@ -49,7 +53,8 @@ export function middleware(req: NextRequest): NextResponse {
 
   if (needsAuth && !isAuthed) {
     const url = new URL("/Login", req.url);
-    url.searchParams.set("next", pathname);
+    const next = req.nextUrl.search ? `${pathname}${req.nextUrl.search}` : pathname;
+    url.searchParams.set("next", next);
     return NextResponse.redirect(url);
   }
 
@@ -63,6 +68,6 @@ export function middleware(req: NextRequest): NextResponse {
 export const config = {
   // Run on app routes only; skip Next internals and static assets.
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|sw.js|push-sw.js|images|icons|offline).*)",
+    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|sw.js|images|icons|offline).*)",
   ],
 };

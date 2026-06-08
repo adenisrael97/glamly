@@ -65,10 +65,28 @@ model User {
   // Stylists this admin user has approved/rejected/suspended
   approvedStylists  Stylist[]          @relation("StylistApprovals")
   giftVouchers      GiftVoucher[]
+  passwordResets    PasswordReset[]
 
   @@index([role])
   @@index([deletedAt])
   @@map("users")
+}
+
+// One-time password reset token (SHA-256 hash stored; raw token travels only in email).
+// A user may only have one active reset at a time; issuing a new one deletes prior ones.
+// Token expires after 1 hour. Marked usedAt on consumption so replays are rejected.
+model PasswordReset {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("password_resets")
 }
 
 // One Stylist record per User with role=STYLIST. Only APPROVED stylists are

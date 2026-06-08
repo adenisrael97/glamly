@@ -1,6 +1,13 @@
 import { Router } from "express";
 import { Request, Response } from "express";
-import { loginSchema, registerSchema, updateProfileSchema } from "@glamly/shared";
+import {
+  changePasswordSchema,
+  forgotPasswordSchema,
+  loginSchema,
+  registerSchema,
+  resetPasswordSchema,
+  updateProfileSchema,
+} from "@glamly/shared";
 import { authController } from "../../controllers/auth.controller";
 import { authenticate } from "../../middleware/auth";
 import { validateBody } from "../../middleware/validate";
@@ -33,11 +40,43 @@ router.post("/refresh", authRateLimiter, authController.refresh);
 // Logout is idempotent and safe; no rate limit needed.
 router.post("/logout", authController.logout);
 
+// Password reset — rate-limited with the same limiter as login/register to
+// blunt abuse (e.g. spamming a victim's inbox or brute-forcing reset tokens).
+router.post(
+  "/forgot-password",
+  authRateLimiter,
+  validateBody(forgotPasswordSchema),
+  authController.forgotPassword,
+);
+
+// Validate a reset token before showing the reset form (GET, token in querystring).
+// Rate-limited like the other reset routes so the endpoint can't be hammered to
+// brute-force a token or drive DB load (defence in depth — tokens are 256-bit).
+router.get("/reset-password", authRateLimiter, authController.validateResetToken);
+
+// Consume a reset token and set the new password (POST, token + password in body).
+router.post(
+  "/reset-password",
+  authRateLimiter,
+  validateBody(resetPasswordSchema),
+  authController.resetPassword,
+);
+
 // Protected: requires a valid access token. Serves as the canonical "who am I".
 router.get("/me", authenticate, authController.me);
 
 // Self-service profile edit (name/phone/address). Validated at the boundary.
 router.patch("/me", authenticate, validateBody(updateProfileSchema), authController.updateProfile);
+
+// Authenticated password change. Rate-limited (shares the auth limiter) so the
+// current-password check can't be brute-forced, and validated at the boundary.
+router.post(
+  "/me/password",
+  authenticate,
+  authRateLimiter,
+  validateBody(changePasswordSchema),
+  authController.changePassword,
+);
 
 // Avatar upload — multipart/form-data with field "file" (JPEG/PNG/WebP, ≤ 5 MB).
 // Multer is applied inline (not as route-level middleware) so its errors flow through

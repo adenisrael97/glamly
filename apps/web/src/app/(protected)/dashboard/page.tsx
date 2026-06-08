@@ -79,13 +79,21 @@ function ProfileSection() {
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-base font-semibold text-gray-900">Your profile</h2>
         {!editing && (
-          <button
-            type="button"
-            onClick={startEdit}
-            className="text-sm font-semibold text-purple-600 hover:text-purple-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 rounded px-1"
-          >
-            Edit
-          </button>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/dashboard/settings"
+              className="text-sm font-semibold text-purple-600 hover:text-purple-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 rounded px-1"
+            >
+              Settings
+            </Link>
+            <button
+              type="button"
+              onClick={startEdit}
+              className="text-sm font-semibold text-purple-600 hover:text-purple-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 rounded px-1"
+            >
+              Edit
+            </button>
+          </div>
         )}
       </div>
 

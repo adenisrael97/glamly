@@ -1,5 +1,13 @@
 import { Request, Response } from "express";
-import type { AuthResult, LoginInput, RegisterInput, UpdateProfileInput } from "@glamly/shared";
+import type {
+  AuthResult,
+  ChangePasswordInput,
+  ForgotPasswordInput,
+  LoginInput,
+  RegisterInput,
+  ResetPasswordInput,
+  UpdateProfileInput,
+} from "@glamly/shared";
 import { authService, type IssuedSession } from "../services/auth.service";
 import { asyncHandler } from "../middleware/asyncHandler";
 import { sendSuccess, sendCreated } from "../lib/apiResponse";
@@ -83,5 +91,65 @@ export const authController = {
       { ipAddress: clientIp(req) },
     );
     sendSuccess(res, user, "Profile updated successfully");
+  }),
+
+  /**
+   * POST /auth/me/password
+   * Change the signed-in user's password. The refresh cookie is read so the
+   * service can keep THIS device signed in while revoking the user's other
+   * sessions. Body pre-validated by validateBody(changePasswordSchema).
+   */
+  changePassword: asyncHandler(async (req: Request, res: Response) => {
+    if (!req.user) throw new UnauthorizedError();
+    await authService.changePassword(req.user.id, req.body as ChangePasswordInput, {
+      ipAddress: clientIp(req),
+      currentRefreshToken: req.cookies?.[REFRESH_COOKIE_NAME] as string | undefined,
+    });
+    sendSuccess(res, null, "Password changed successfully");
+  }),
+
+  /**
+   * POST /auth/forgot-password
+   * Always returns 200 with the same message whether or not the email exists
+   * (enumeration guard). Rate-limited on the route.
+   */
+  forgotPassword: asyncHandler(async (req: Request, res: Response) => {
+    await authService.forgotPassword(req.body as ForgotPasswordInput, {
+      ipAddress: clientIp(req),
+    });
+    sendSuccess(
+      res,
+      null,
+      "If an account with that email exists, a reset link has been sent.",
+    );
+  }),
+
+  /**
+   * GET /auth/reset-password?token=<raw>
+   * Validate the token before rendering the reset form. Returns the masked
+   * email so the UI can confirm to the user which account they're resetting.
+   */
+  validateResetToken: asyncHandler(async (req: Request, res: Response) => {
+    const token = req.query["token"];
+    if (typeof token !== "string" || !token) {
+      sendSuccess(res, { valid: false }, "Invalid reset token");
+      return;
+    }
+    const result = await authService.validateResetToken(token);
+    sendSuccess(res, { valid: true, maskedEmail: result.maskedEmail }, "Token is valid");
+  }),
+
+  /**
+   * POST /auth/reset-password
+   * Consume the token and set a new password. All sessions are revoked on
+   * success so a stolen cookie cannot be replayed post-reset.
+   */
+  resetPassword: asyncHandler(async (req: Request, res: Response) => {
+    await authService.resetPassword(req.body as ResetPasswordInput, {
+      ipAddress: clientIp(req),
+    });
+    // Clear any refresh cookie that may be present — forces a clean login.
+    clearRefreshCookie(res);
+    sendSuccess(res, null, "Password reset successfully. Please log in with your new password.");
   }),
 };

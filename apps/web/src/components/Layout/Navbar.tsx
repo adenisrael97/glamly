@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -22,10 +22,30 @@ const contactInfo = {
   email: "info@glamhub.com",
 };
 
+// Returns false during SSR and the first client (hydration) render, then true
+// thereafter. The React-recommended primitive for gating client-only UI without
+// a hydration mismatch — the server snapshot is always `false`, so server HTML
+// and the first client render agree; no setState-in-effect, no extra paint pass.
+const subscribeNoop = () => () => {};
+function useHydrated(): boolean {
+  return useSyncExternalStore(
+    subscribeNoop,
+    () => true, // client snapshot
+    () => false, // server snapshot (also used for the hydration render)
+  );
+}
+
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuth();
+  // The session is resolved on the CLIENT only — it lives in an httpOnly refresh
+  // cookie + an in-memory access token the server cannot read — so the server
+  // always renders the logged-out controls. We defer the logged-in/out branch
+  // until after hydration so the first client render matches the server HTML (no
+  // hydration mismatch); the account menu then appears in a follow-up render once
+  // `hydrated` flips true. See the auth CTA block below.
+  const hydrated = useHydrated();
   const [isOpen, setIsOpen] = useState(false); // mobile menu
   const [scrolled, setScrolled] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false); // desktop dropdown
@@ -76,6 +96,16 @@ export default function Navbar() {
   };
 
   const navbarBg = scrolled ? "rgba(0,0,0,0.95)" : "rgba(44, 20, 63, 0.85)";
+
+  // Account settings live in each role's own area (the underlying /auth/me
+  // endpoints are role-agnostic). Only read when `user` is set, so the role
+  // fallback here is never actually used.
+  const settingsHref =
+    user?.role === "admin"
+      ? "/admin/settings"
+      : user?.role === "stylist"
+        ? "/studio/profile"
+        : "/dashboard/settings";
 
   return (
     <>
@@ -219,9 +249,10 @@ export default function Navbar() {
               ))}
             </ul>
 
-            {/* CTA / Auth */}
+            {/* CTA / Auth — render the logged-out controls until hydrated AND a
+                user is known, so SSR and the first client render agree. */}
             <div className="hidden lg:flex items-center gap-3 ml-4">
-              {!user ? (
+              {!hydrated || !user ? (
                 <>
                   <Link
                     href="/Login"
@@ -243,7 +274,7 @@ export default function Navbar() {
                     Book Now 📅
                   </Link>
                 </>
-              ) : user ? (
+              ) : (
                 <>
                   <Link
                     href="/book-appointment"
@@ -314,6 +345,18 @@ export default function Navbar() {
                                 My Studio
                               </Link>
                             )}
+                            <Link
+                              href={settingsHref}
+                              role="menuitem"
+                              onClick={() => setUserMenuOpen(false)}
+                              className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                            >
+                              <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              </svg>
+                              Settings
+                            </Link>
                           </div>
                           <div className="py-1 border-t border-gray-100">
                             <button
@@ -333,7 +376,7 @@ export default function Navbar() {
                     </AnimatePresence>
                   </div>
                 </>
-              ) : null}
+              )}
             </div>
 
             {/* Mobile menu button */}
@@ -428,6 +471,13 @@ export default function Navbar() {
                         className="block px-4 py-2.5 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-200 transition-colors"
                       >
                         Dashboard
+                      </Link>
+                      <Link
+                        href={settingsHref}
+                        onClick={() => setIsOpen(false)}
+                        className="block px-4 py-2.5 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-200 transition-colors"
+                      >
+                        Settings
                       </Link>
                       <button
                         type="button"

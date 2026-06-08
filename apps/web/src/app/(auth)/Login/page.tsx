@@ -217,7 +217,7 @@ export default function LoginPage() {
                   Password <span className="text-red-500" aria-hidden="true">*</span>
                 </label>
                 <Link
-                  href="#"
+                  href="/forgot-password"
                   className="text-xs text-purple-600 hover:text-purple-800 font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 rounded"
                 >
                   Forgot password?

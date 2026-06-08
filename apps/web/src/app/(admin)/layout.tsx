@@ -74,6 +74,15 @@ function ServicesIcon() {
   );
 }
 
+function SettingsIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+    </svg>
+  );
+}
+
 function HamburgerIcon() {
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -249,6 +258,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     { label: "Users", href: "/admin/users", icon: <UsersIcon /> },
     { label: "Bookings", href: "/admin/bookings", icon: <BookingsIcon /> },
     { label: "Services", href: "/admin/services", icon: <ServicesIcon /> },
+    { label: "Settings", href: "/admin/settings", icon: <SettingsIcon /> },
   ];
 
   // Close mobile menu on route change.
@@ -359,7 +369,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         <DashboardTopbar
           rootLabel="Dashboard"
           userName={userName}
-          profileHref="/admin/dashboard"
+          profileHref="/admin/settings"
           onLogout={handleLogout}
           rightSlot={
             <Link

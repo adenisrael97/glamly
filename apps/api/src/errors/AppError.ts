@@ -84,6 +84,39 @@ export class EmailTakenError extends ConflictError {
   }
 }
 
+// Reset token is absent from the DB, already used, or structurally malformed.
+// One class for all invalid states so the client can't probe whether a token
+// ever existed.
+export class ResetTokenInvalidError extends AppError {
+  constructor() {
+    super(
+      "This password reset link is invalid. Please request a new one.",
+      400,
+      ERROR_CODES.AUTH_RESET_TOKEN_INVALID,
+    );
+  }
+}
+
+// The token was valid but its 1-hour TTL has elapsed.
+export class ResetTokenExpiredError extends AppError {
+  constructor() {
+    super(
+      "This password reset link has expired. Please request a new one.",
+      400,
+      ERROR_CODES.AUTH_RESET_TOKEN_EXPIRED,
+    );
+  }
+}
+
+// Authenticated change-password: the supplied current password was wrong. A 400
+// (not 401) on purpose — the request is already authenticated, and a 401 would
+// make the web client's interceptor try to refresh + replay it.
+export class IncorrectPasswordError extends AppError {
+  constructor() {
+    super("Your current password is incorrect", 400, ERROR_CODES.AUTH_INCORRECT_PASSWORD);
+  }
+}
+
 // ─── Booking domain ─────────────────────────────────────────────────────────
 
 // The requested slot is already taken by another active booking. Raised when the

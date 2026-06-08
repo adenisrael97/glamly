@@ -7,9 +7,8 @@ import Footer from "@/components/Layout/Footer";
 import { HideOnDashboard } from "@/components/Layout/HideOnDashboard";
 import { AuthProvider } from "@/context/AuthContext";
 import { InstallPrompt } from "@/components/ui/InstallPrompt";
-import { UpdatePrompt } from "@/components/ui/UpdatePrompt";
 import { OfflineBanner } from "@/components/ui/OfflineBanner";
-import { ServiceWorkerRegistrar } from "@/components/ui/ServiceWorkerRegistrar";
+import { SWDevCleanup } from "@/components/ui/SWDevCleanup";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -81,9 +80,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             <Footer />
           </HideOnDashboard>
           <InstallPrompt />
-          <UpdatePrompt />
-          {/* Registers sw.js; must be a client component */}
-          <ServiceWorkerRegistrar />
+          {/* Serwist auto-registers the SW in production (next.config). This only
+              tidies up a stale SW left over in development. */}
+          <SWDevCleanup />
         </AuthProvider>
       </body>
     </html>

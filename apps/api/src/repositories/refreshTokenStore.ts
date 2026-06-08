@@ -37,7 +37,7 @@ export const refreshTokenStore = {
     await redis.multi().del(tokenKey(jti)).srem(userSetKey(userId), jti).exec();
   },
 
-  /** Revoke every live session for a user (reuse detected, password change, etc.). */
+  /** Revoke every live session for a user (reuse detected, account recovery, etc.). */
   async revokeAllForUser(userId: string): Promise<void> {
     const jtis = await redis.smembers(userSetKey(userId));
     const pipeline = redis.multi();
@@ -45,6 +45,23 @@ export const refreshTokenStore = {
       pipeline.del(tokenKey(jti));
     }
     pipeline.del(userSetKey(userId));
+    await pipeline.exec();
+  },
+
+  /**
+   * Revoke every live session for a user EXCEPT one (the caller's current jti).
+   * Used on an authenticated password change so other devices are logged out
+   * while the device making the change stays signed in. When `keepJti` is
+   * undefined (no valid current session), this degrades to revoking everything.
+   */
+  async revokeAllForUserExcept(userId: string, keepJti: string | undefined): Promise<void> {
+    const jtis = await redis.smembers(userSetKey(userId));
+    const pipeline = redis.multi();
+    for (const jti of jtis) {
+      if (jti === keepJti) continue;
+      pipeline.del(tokenKey(jti));
+      pipeline.srem(userSetKey(userId), jti);
+    }
     await pipeline.exec();
   },
 };

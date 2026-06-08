@@ -4,20 +4,28 @@ import { authRepository } from "../repositories/auth.repository";
 
 // Token-retention sweep (CLAUDE.md §10). The live refresh-token whitelist lives
 // in Redis and self-expires via TTL; this job purges any expired/revoked refresh
-// tokens persisted in Postgres so the table doesn't grow unbounded. Idempotent
-// and safe to run on a schedule — a second pass finds nothing.
+// tokens AND any expired/used password-reset tokens persisted in Postgres so the
+// tables don't grow unbounded. Idempotent and safe to run on a schedule — a
+// second pass finds nothing.
 
 /** One cleanup pass. Exported for unit testing without a scheduler. */
-export async function runCleanTokens(now: Date = new Date()): Promise<{ purged: number }> {
+export async function runCleanTokens(
+  now: Date = new Date(),
+): Promise<{ purged: number; purgedResets: number }> {
   try {
-    const purged = await authRepository.purgeExpiredRefreshTokens(now);
+    const [purged, purgedResets] = await Promise.all([
+      authRepository.purgeExpiredRefreshTokens(now),
+      authRepository.purgeExpiredPasswordResets(now),
+    ]);
     if (purged > 0) logger.info("Purged expired/revoked refresh tokens", { count: purged });
-    return { purged };
+    if (purgedResets > 0)
+      logger.info("Purged expired/used password resets", { count: purgedResets });
+    return { purged, purgedResets };
   } catch (err) {
     logger.error("cleanTokens job failed", {
       error: err instanceof Error ? err.message : String(err),
     });
-    return { purged: 0 };
+    return { purged: 0, purgedResets: 0 };
   }
 }
 

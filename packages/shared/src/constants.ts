@@ -13,6 +13,14 @@ export const ERROR_CODES = {
   // Registration conflict. Returned generically; see auth.service for the
   // enumeration-hardening tradeoff documented at the call site.
   AUTH_EMAIL_TAKEN: "AUTH_EMAIL_TAKEN",
+  // Password reset token is malformed, not found, or has already been used.
+  AUTH_RESET_TOKEN_INVALID: "AUTH_RESET_TOKEN_INVALID",
+  // Password reset token is structurally valid but past its 1-hour TTL.
+  AUTH_RESET_TOKEN_EXPIRED: "AUTH_RESET_TOKEN_EXPIRED",
+  // Authenticated change-password: the supplied current password did not match.
+  // Deliberately a 400 (not 401) so the client's refresh-on-401 interceptor never
+  // fires for a wrong current password.
+  AUTH_INCORRECT_PASSWORD: "AUTH_INCORRECT_PASSWORD",
   // Slot/booking domain.
   BOOKING_SLOT_TAKEN: "BOOKING_SLOT_TAKEN",
   BOOKING_SLOT_UNAVAILABLE: "BOOKING_SLOT_UNAVAILABLE",

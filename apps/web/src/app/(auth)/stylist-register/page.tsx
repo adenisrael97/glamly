@@ -245,7 +245,10 @@ function StylistRegisterForm() {
         priceFrom: Number(fields.priceFrom),
       });
       setSuccess(true);
-      router.push("/studio");
+      // replace so the registration form is not in browser history — the back
+      // button from /studio should go to wherever the user came from, not loop
+      // back through the multi-step registration flow.
+      router.replace("/studio");
     } catch {
       // error surfaced via context; jump back to the review step to show it
       setStep(4);

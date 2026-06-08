@@ -44,7 +44,7 @@ HTTP. The frontend never imports backend code and vice versa.
 | Language         | TypeScript (strict)             | No `any`. No `// @ts-ignore` without reason. |
 | Frontend         | Next.js 15 App Router + React 19| Server Components by default.               |
 | Styling          | Tailwind CSS                    | No inline styles. Use the `ui/` system.     |
-| PWA              | Service Worker + Web Manifest   | Offline, install, push notifications.       |
+| PWA              | Service Worker (Serwist/Workbox via `@serwist/next`) + Web Manifest | Offline, install, push. Worker source `apps/web/src/app/sw.ts` → built to `public/sw.js`. |
 | Data fetching    | SWR                             | `keepPreviousData` to avoid flicker.        |
 | Backend          | Express.js                      | Layered: route → controller → service → repo|
 | Database         | PostgreSQL 16                   | The only persistence store.                 |
@@ -102,12 +102,21 @@ HTTP request
 ## 5. PWA Requirements
 
 - Valid `manifest.json` with maskable icons (192/512), screenshots, and shortcuts.
-- A service worker with a deliberate caching strategy:
-  - App shell: cache-first.
-  - API GETs: stale-while-revalidate.
-  - Mutations: network-only, queued via Background Sync when offline.
-- A dedicated `/offline` fallback page.
-- Custom install prompt (`InstallPrompt`) and update prompt (`UpdatePrompt`).
+- Service worker built with **Serwist** (`@serwist/next`); source `apps/web/src/app/sw.ts`,
+  compiled to `public/sw.js` at build (a **generated, git-ignored artifact**). Caching:
+  - Static/immutable build assets (`/_next/static`, fonts, images): cache-first/SWR — safe
+    because they are content-hashed and the precache manifest is **revisioned per build**.
+  - Pages/navigations: network-first (always fresh HTML); falls back to `/offline`.
+  - Public catalogue API GETs (`/stylists`, `/services`, `/packages`, no `Authorization`):
+    stale-while-revalidate. **All other `/api/v1` GETs are network-only** (never cached —
+    PII + freshness, §10); this explicitly shadows Serwist `defaultCache`'s `/api` rule.
+  - Non-auth mutations: network-only, queued via Serwist `BackgroundSyncPlugin` when offline.
+- **Always in sync (no stale cache):** the SW is **disabled in development** (HMR is the
+  source of truth; `SWDevCleanup` removes any stale worker). In production it uses
+  `skipWaiting` + `clientsClaim`, and the client reloads once on `controllerchange`
+  (guarded — see `usePWA`) so a new deploy silently replaces the old one. No manual
+  "update available" prompt.
+- A dedicated `/offline` fallback page. Custom install prompt (`InstallPrompt`).
 - Web Push notifications for booking confirmations and reminders (VAPID).
 - Must pass a Lighthouse PWA audit (installable + offline-capable).
 

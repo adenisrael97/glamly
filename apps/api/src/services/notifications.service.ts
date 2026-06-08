@@ -14,6 +14,7 @@ import {
   renderBookingCancelledEmail,
   renderBookingConfirmedEmail,
   renderBookingReminderEmail,
+  renderPasswordResetEmail,
   renderWelcomeEmail,
 } from "../emails";
 
@@ -280,6 +281,39 @@ export const notificationsService = {
       });
     } catch (err) {
       logFailure("sendStylistStatusEmail", err);
+    }
+  },
+
+  /**
+   * Send a password reset email. The raw token is embedded in the link by the
+   * caller (auth.service); this method only handles rendering and delivery.
+   * Best-effort: a delivery failure is logged and never propagated.
+   */
+  async sendPasswordReset(user: {
+    name: string;
+    email: string;
+    resetUrl: string;
+  }): Promise<void> {
+    try {
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+      const rendered = await renderPasswordResetEmail({
+        name: user.name,
+        resetUrl: user.resetUrl,
+        expiresAt,
+      });
+      const result = await email.send({ to: user.email, ...rendered });
+
+      // Local-dev affordance: with no email provider configured the link can't be
+      // delivered, so surface it in the logs to let the reset flow be exercised
+      // end-to-end locally. DEVELOPMENT ONLY — a raw token must never reach the
+      // logs in production (§10), and in prod a provider is always configured.
+      if (result.status === "skipped" && config.NODE_ENV === "development") {
+        logger.info("Password reset link (dev only — email delivery skipped)", {
+          resetUrl: user.resetUrl,
+        });
+      }
+    } catch (err) {
+      logFailure("sendPasswordReset", err);
     }
   },
 

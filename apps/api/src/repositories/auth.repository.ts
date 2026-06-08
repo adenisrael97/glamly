@@ -1,4 +1,4 @@
-import { Prisma, User } from "@prisma/client";
+import { Prisma, User, PasswordReset } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import type { Role } from "@glamly/shared";
 
@@ -108,6 +108,80 @@ export const authRepository = {
   async purgeExpiredRefreshTokens(now: Date = new Date()): Promise<number> {
     const { count } = await prisma.refreshToken.deleteMany({
       where: { OR: [{ expiresAt: { lt: now } }, { revoked: true }] },
+    });
+    return count;
+  },
+
+  // ─── Password reset ──────────────────────────────────────────────────────────
+
+  /**
+   * Delete any prior reset tokens for this user, then insert a new one.
+   * Keeping only one active token per user prevents token accumulation and
+   * ensures that requesting a new reset invalidates any previously-sent link.
+   */
+  async savePasswordResetToken(
+    userId: string,
+    tokenHash: string,
+    expiresAt: Date,
+  ): Promise<PasswordReset> {
+    return prisma.$transaction(async (tx) => {
+      await tx.passwordReset.deleteMany({ where: { userId } });
+      return tx.passwordReset.create({ data: { userId, tokenHash, expiresAt } });
+    });
+  },
+
+  /**
+   * Find a password reset record by its hashed token. Used for both validation
+   * and consumption. Returns null when not found (treat as invalid).
+   */
+  async findPasswordResetByTokenHash(tokenHash: string): Promise<PasswordReset | null> {
+    return prisma.passwordReset.findUnique({ where: { tokenHash } });
+  },
+
+  /**
+   * Atomically consume a reset token and set the user's new password (§11).
+   * Both writes share ONE transaction: either the token is marked used AND the
+   * password changes, or neither does — a partial failure can never leave a
+   * consumed token with an unchanged password (or vice-versa).
+   *
+   * The token is consumed with a conditional `updateMany` on `usedAt: null`, so
+   * two concurrent requests replaying the same link can't both succeed — the
+   * loser sees `count === 0` and we return false (caller treats as invalid).
+   */
+  async consumeResetAndUpdatePassword(
+    resetId: string,
+    userId: string,
+    passwordHash: string,
+  ): Promise<boolean> {
+    return prisma.$transaction(async (tx) => {
+      const consumed = await tx.passwordReset.updateMany({
+        where: { id: resetId, usedAt: null },
+        data: { usedAt: new Date() },
+      });
+      // Already consumed by a racing request — abort without touching the password.
+      if (consumed.count === 0) return false;
+      await tx.user.update({ where: { id: userId }, data: { passwordHash } });
+      return true;
+    });
+  },
+
+  /** Update the stored password hash — the only place a password is changed. */
+  async updatePasswordHash(userId: string, passwordHash: string): Promise<void> {
+    await prisma.user.update({ where: { id: userId }, data: { passwordHash } });
+  },
+
+  /**
+   * Delete all password reset tokens for a user (cleanup after successful reset
+   * or as part of account deletion). Idempotent.
+   */
+  async deletePasswordResetsByUserId(userId: string): Promise<void> {
+    await prisma.passwordReset.deleteMany({ where: { userId } });
+  },
+
+  /** Cron-friendly cleanup: purge all expired or used reset tokens. */
+  async purgeExpiredPasswordResets(now: Date = new Date()): Promise<number> {
+    const { count } = await prisma.passwordReset.deleteMany({
+      where: { OR: [{ expiresAt: { lt: now } }, { usedAt: { not: null } }] },
     });
     return count;
   },

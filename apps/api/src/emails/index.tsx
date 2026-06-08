@@ -13,6 +13,10 @@ import {
   BookingCancelledEmail,
   type BookingCancelledEmailProps,
 } from "./BookingCancelledEmail";
+import {
+  PasswordResetEmail,
+  type PasswordResetEmailProps,
+} from "./PasswordResetEmail";
 
 // Render boundary: this is the ONLY module that turns a template component into
 // a sendable email. Callers (notifications.service) stay JSX-free and just ask
@@ -64,5 +68,14 @@ export async function renderBookingCancelledEmail(
   return {
     subject: `Booking cancelled — ${props.serviceName}`,
     ...(await renderBoth(<BookingCancelledEmail {...props} />)),
+  };
+}
+
+export async function renderPasswordResetEmail(
+  props: PasswordResetEmailProps,
+): Promise<RenderedEmail> {
+  return {
+    subject: "Reset your Glamly password",
+    ...(await renderBoth(<PasswordResetEmail {...props} />)),
   };
 }

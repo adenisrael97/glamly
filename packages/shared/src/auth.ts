@@ -160,6 +160,58 @@ export const updateProfileSchema = z
 
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 
+// ─── Forgot / reset password ──────────────────────────────────────────────────
+//
+// forgotPasswordSchema: only the email is required. The server ALWAYS responds
+// 200 regardless of whether the email exists — prevents enumeration.
+//
+// resetPasswordSchema: the raw token from the URL plus the new password (twice).
+// Passwords must satisfy the same policy as registration so the strength bar
+// on the reset form can give real-time feedback using the shared schema.
+
+export const forgotPasswordSchema = z.object({
+  email: emailSchema,
+});
+
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+
+export const resetPasswordSchema = z
+  .object({
+    token: z.string().min(1, "Reset token is required"),
+    password: passwordSchema,
+    confirmPassword: z.string().min(1, "Please confirm your password"),
+  })
+  .refine((d) => d.password === d.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
+
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+
+// ─── Change password (authenticated) ───────────────────────────────────────────
+//
+// Self-service password change for a signed-in user. The current password must be
+// supplied and verified server-side (proof of presence), the new password must
+// satisfy the registration policy, and it must actually differ from the current
+// one. `currentPassword` is NOT held to the policy — only the new one is.
+
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, "Your current password is required").max(200),
+    newPassword: passwordSchema,
+    confirmPassword: z.string().min(1, "Please confirm your new password"),
+  })
+  .refine((d) => d.newPassword === d.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  })
+  .refine((d) => d.newPassword !== d.currentPassword, {
+    message: "New password must be different from your current one",
+    path: ["newPassword"],
+  });
+
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+
 // ─── Token & user shapes ───────────────────────────────────────────────────────
 
 /** Claims carried by the short-lived access JWT. */
