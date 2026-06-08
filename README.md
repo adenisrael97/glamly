@@ -222,8 +222,9 @@ Every surface that waits on data shows a shimmer skeleton rather than a spinner 
 ## Author
 
 **Adeniran Israel**  
-Frontend Engineer  
-[GitHub](https://github.com/your-username) · [LinkedIn](https://linkedin.com/in/your-profile)
+Full stack Developer
+
+[GitHub](https://github.com/your-username) · [LinkedIn]www.linkedin.com/in/israel-adeniran-938b43164
 
 ---
 
