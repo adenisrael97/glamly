@@ -4,6 +4,7 @@
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "env": ["NODE_ENV", "NEXT_PUBLIC_*"],
       "outputs": [".next/**", "!.next/cache/**", "dist/**"]
     },
     "dev": {
@@ -17,11 +18,41 @@
       "dependsOn": ["^typecheck"]
     },
     "test": {
-      "dependsOn": ["^build"]
+      "dependsOn": ["^build"],
+      "env": [
+        "NODE_ENV",
+        "PORT",
+        "DATABASE_URL",
+        "REDIS_URL",
+        "JWT_ACCESS_SECRET",
+        "JWT_REFRESH_SECRET",
+        "JWT_ACCESS_EXPIRES_IN",
+        "JWT_REFRESH_EXPIRES_IN",
+        "CORS_ORIGINS",
+        "PAYSTACK_*",
+        "RESEND_API_KEY",
+        "EMAIL_FROM",
+        "WEB_APP_URL",
+        "VAPID_*",
+        "CLOUDINARY_*",
+        "SENTRY_*",
+        "NEXT_PUBLIC_*"
+      ]
     },
     "test:e2e": {
       "dependsOn": ["^build"],
-      "cache": false
+      "cache": false,
+      "env": [
+        "NODE_ENV",
+        "PORT",
+        "DATABASE_URL",
+        "REDIS_URL",
+        "JWT_ACCESS_SECRET",
+        "JWT_REFRESH_SECRET",
+        "PAYSTACK_*",
+        "WEB_APP_URL",
+        "NEXT_PUBLIC_*"
+      ]
     }
   }
 }
